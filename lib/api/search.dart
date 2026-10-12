@@ -1,8 +1,6 @@
 import 'dart:convert';
 
 import 'package:campus_navigator/api/networking.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
-import 'package:http/http.dart' as http;
 
 import 'api_services.dart';
 
@@ -42,26 +40,12 @@ class SearchResult {
     final uri = Uri.parse('$baseURL/search');
     var map = {'query': query, 'from': "/", 'geocode': '1'};
 
-    // Search result caching
-    String body;
-    final cacheKey = "${uri.toString()} - ${jsonEncode(map)}";
-    final cachedData = await DefaultCacheManager().getFileFromCache(cacheKey);
-    if (cachedData != null) {
-      body = await cachedData.file.readAsString();
-    } else {
-      final response = await http.post(uri, body: map);
-
-      if (response.statusCode != 200) {
-        // If the server did not return a 200 OK response,
-        // then throw an exception.
-        throw Exception('Failed to load search results');
-      }
-
-      body = response.body;
-      await DefaultCacheManager().putFile(cacheKey, utf8.encode(body),
-          fileExtension: 'json',
-          maxAge: (await APIServices.Shared.storage.getCacheDuration()).value);
-    }
+    final api = APIServices.Shared;
+    final body = await api.cachedStringRequest(uri,
+        cacheKey: '${uri.toString()} - ${jsonEncode(map)}',
+        fileExtension: 'json',
+        requestFunction: (uri) => api.client.post(uri, body: map));
+    if (body == null) throw Exception('Failed to load search results');
 
     // If the server did return a 200 OK response,
     // then parse the JSON.
@@ -87,7 +71,7 @@ class SearchResultObject {
 
   factory SearchResultObject.fromJson(List<dynamic> json) {
     final nameMatches = roomResultExp.firstMatch(json[0] as String)!;
-    final name = nameMatches[1]!;
+    final name = nameMatches[1]!.trim();
     final subName = nameMatches[3];
 
     return SearchResultObject(
