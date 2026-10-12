@@ -2,6 +2,15 @@
 
 A WIP flutter app that improves the mobile experience of the https://navigator.tu-dresden.de website.
 
+## Private UI / dark-mode experiment
+
+The development branch `work/ui-polish-and-darkmode` preserves the detailed floor-plan
+rasters and fixes theme repainting, room identity/label collisions, caching, tile lifetime
+and the compact phone/tablet layout. See [decisions and validation](docs/ui-polish.md).
+The build workflow runs tests and produces a debug APK for this branch and PRs to master.
+Android compilation and real-device testing of this change are still pending.
+No original TU response fixtures or floor-plan tiles are included in the regression tests.
+
 ## Features
 
 * Search for rooms
