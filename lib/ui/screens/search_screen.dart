@@ -1,9 +1,10 @@
+import 'dart:async';
+
 // Define a custom Form widget.
 import 'package:campus_navigator/api/building/building_page_data.dart';
 import 'package:campus_navigator/api/search.dart';
 import 'package:campus_navigator/api/storage.dart';
 import 'package:campus_navigator/ui/screens/building_screen.dart';
-import 'package:campus_navigator/ui/styling.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
@@ -21,91 +22,78 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   Future<SearchResult>? searchResult;
+  Timer? _debounce;
+  int _queryRevision = 0;
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
+  }
 
   String hintText = "";
 
-  Widget searchResultList(SearchResult result) {
-    final roomButtons =
-        result.resultsRooms.take(8).map(roomResultButton).toList();
+  Widget searchResultList(SearchResult result) => Column(children: [
+        ...result.resultsRooms.map(roomResultButton),
+        if (result.moreRooms)
+          Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text(Localizations.localeOf(context).languageCode == 'de'
+                  ? 'Suche eingrenzen, um weitere Räume zu finden.'
+                  : 'Refine your search to find more rooms.')),
+      ]);
 
-    final children = roomButtons;
-    if (result.resultsRooms.length > 8) {
-      children.add(const Text(
-        ". . . . . ",
-        style: TextStyle(color: Styling.primaryColor),
-      ));
-    }
+  Widget roomResultButton(SearchResultObject entry) => ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+        title: Text(entry.name),
+        subtitle: entry.subName == null ? null : Text(entry.subName!),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () {
+          FocusScope.of(context).unfocus();
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => BuildingScreen(
+                      room: BuildingPageData.fetchQuery(entry.identifier),
+                      name: entry.name)));
+        },
+      );
 
-    return Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [...roomButtons]);
+  void onSearchChanged(String query) {
+    _debounce?.cancel();
+    final revision = ++_queryRevision;
+    setState(() {
+      searchResult = null;
+      hintText = '';
+    });
+    if (query.trim().isEmpty) return;
+    _debounce = Timer(const Duration(milliseconds: 400),
+        () => _search(query.trim(), revision));
   }
 
-  Widget roomResultButton(SearchResultObject resultEntry) {
-    return TextButton(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.baseline,
-        textBaseline: TextBaseline.alphabetic,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            resultEntry.name,
-            style: const TextStyle(
-              fontSize: 20,
-            ),
-          ),
-          const SizedBox(
-            width: 10,
-          ),
-          resultEntry.subName != null
-              ? Text(
-                  resultEntry.subName!,
-                  style: TextStyle(
-                      fontSize: 17, color: Styling.primaryColor.withAlpha(200)),
-                )
-              : const SizedBox.shrink()
-        ],
-      ),
-      onPressed: () {
-        final roomResult = BuildingPageData.fetchQuery(resultEntry.identifier);
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) =>
-                  BuildingScreen(room: roomResult, name: resultEntry.name)),
-        );
-      },
-    );
-  }
-
-  void onSearchChanged(String newQuery) async {
-    final searchFuture = SearchResult.searchRoom(newQuery);
+  Future<void> _search(String query, int revision) async {
+    final future = SearchResult.searchRoom(query);
     setState(() {
-      searchResult = searchFuture;
+      searchResult = future;
     });
-
-    final results = await searchFuture;
-    final firstResult = results.resultsRooms.firstOrNull;
-
-    setState(() {
-      hintText = results.assist;
-    });
-    if (firstResult == null) return;
-
-    // Prefetching for better UX
-    final preFetchingLevel =
-        await APIServices.Shared.storage.getPrefetchingLevel();
-
-    switch (preFetchingLevel) {
-      case PrefetchingLevel.allResults:
-        results.resultsRooms
-            .map((e) => BuildingPageData.preFetchQuery(e.identifier));
-      case PrefetchingLevel.firstResult:
-        BuildingPageData.preFetchQuery(firstResult.identifier);
-      case PrefetchingLevel.none:
-        break;
+    try {
+      final results = await future;
+      if (!mounted || revision != _queryRevision) return;
+      setState(() => hintText = results.assist);
+      final prefetch = await APIServices.Shared.storage.getPrefetchingLevel();
+      if (!mounted || revision != _queryRevision) return;
+      final count = prefetch == PrefetchingLevel.allResults
+          ? 8
+          : prefetch == PrefetchingLevel.firstResult
+              ? 1
+              : 0;
+      // Prefetch only HTML, serially; errors must not escape the search handler.
+      for (final entry in results.resultsRooms.take(count)) {
+        if (!mounted || revision != _queryRevision) break;
+        await BuildingPageData.preFetchQuery(entry.identifier);
+      }
+    } catch (_) {
+      // FutureBuilder displays the search error. A prefetch failure is optional.
     }
   }
 
@@ -115,7 +103,6 @@ class _SearchScreenState extends State<SearchScreen> {
 
     return Scaffold(
         appBar: AppBar(
-          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
           title: Text(localizations.searchScreen_Title),
           actions: [
             IconButton(
@@ -161,31 +148,33 @@ class _SearchScreenState extends State<SearchScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Stack(
-                    children: [
-                      // Show searcch suggestion below actual search text field
-                      TextField(
-                        enabled: false,
-                        decoration: InputDecoration(
-                          hintText: hintText,
-                        ),
-                      ),
-                      TextField(
-                        enableInteractiveSelection: true,
-                        autocorrect: false,
-                        decoration: InputDecoration(
-                          hintText: localizations.searchScreen_SearchHint,
-                        ),
-                        onChanged: onSearchChanged,
-                      ),
-                    ],
+                  TextField(
+                    enableInteractiveSelection: true,
+                    autocorrect: false,
+                    textInputAction: TextInputAction.search,
+                    decoration: InputDecoration(
+                        prefixIcon: const Icon(Icons.search),
+                        hintText: localizations.searchScreen_SearchHint),
+                    onChanged: onSearchChanged,
+                    onSubmitted: (query) {
+                      _debounce?.cancel();
+                      if (query.trim().isNotEmpty)
+                        _search(query.trim(), ++_queryRevision);
+                    },
                   ),
+                  if (hintText.isNotEmpty)
+                    Align(
+                        alignment: Alignment.centerLeft,
+                        child: Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(hintText))),
 
                   // Spacing
                   const SizedBox(
                     height: 20,
                   ),
                   FutureBuilder(
+                    key: ValueKey(_queryRevision),
                     future: searchResult,
                     builder: (context, snapshot) {
                       if (snapshot.hasError) {

@@ -6,7 +6,6 @@ import 'package:campus_navigator/api/building/parsing/building_levels.dart';
 import 'package:campus_navigator/api/building/roomOccupancyPlan.dart';
 import 'package:campus_navigator/api/networking.dart';
 import 'package:campus_navigator/ui/components/adress_section_view.dart';
-import 'package:campus_navigator/ui/styling.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:share_plus/share_plus.dart';
@@ -30,62 +29,67 @@ class BuildingScreen extends StatefulWidget {
 
 class _BuildingScreenState extends State<BuildingScreen> {
   String? selectedLevel;
-  bool isRoomSelected = true;
+  bool isRoomSelected = false;
   String? roomURL;
   List<List<List<String>>>? roomPlan;
   bool showOccupancyTable = false;
   String? errorMessageOccupancyTable;
-  bool updateView = false;
+  String? _originalQuery;
+  String? _originalLevel;
+  final List<Future<BuildingPageData>> _ownedPages = [];
   Set<layerFilterOptions> selectedFilters = {};
 
   @override
   void dispose() {
+    for (final page in _ownedPages) {
+      page.then((data) => data.backgroundImageData?.dispose(), onError: (_) {});
+    }
     super.dispose();
   }
 
   @override
   void initState() {
     super.initState();
-    selectedFilters = APIServices.Shared.storage.filterSet;
+    selectedFilters = Set.of(APIServices.Shared.storage.filterSet);
+    _ownedPages.add(widget.room);
     widget.room.then((room) {
+      if (!mounted) return;
       setState(() {
         selectedLevel = room.buildingData.getCurrentLevel()?.name;
-        roomURL = room.queryParts.last;
+        _originalLevel = selectedLevel;
+        _originalQuery = room.queryParts.join("/");
+        roomURL = room.selectedRoom?.id;
+        isRoomSelected = roomURL != null;
       });
-    });
+    }, onError: (_) {});
   }
 
-  void loadOccupancyTable(localizations, currentLocale) {
-    setState(() {
-      showOccupancyTable = !showOccupancyTable;
-      if (showOccupancyTable && roomURL != null) {
-        Future<LoginResponse> loginToken = APIServices.Shared.postLogin();
-        loginToken.then((value) {
-          Future<List<List<List<String>>>> tableContent =
-              APIServices.Shared.getRoomPlan(
-                  roomURL!, value.loginToken, currentLocale);
-          tableContent.then((value) {
-            setState(() {
-              roomPlan = value;
-              if (value.isEmpty) {
-                // No Data loaded/available
-                isRoomSelected = false;
-                errorMessageOccupancyTable =
-                    localizations.buildingScreen_occupancyError;
-                updateView = !updateView;
-              }
-            });
-          });
-        }).catchError(onError);
-      }
-    });
+  Future<void> loadOccupancyTable(localizations, String currentLocale) async {
+    setState(() => showOccupancyTable = !showOccupancyTable);
+    final id = roomURL;
+    if (!showOccupancyTable || id == null) return;
+    final level = selectedLevel;
+    try {
+      final token = await APIServices.Shared.postLogin();
+      final content = await APIServices.Shared.getRoomPlan(
+          id, token.loginToken, currentLocale);
+      if (!mounted || !showOccupancyTable || level != selectedLevel) return;
+      setState(() {
+        roomPlan = content;
+        if (content.isEmpty)
+          errorMessageOccupancyTable =
+              localizations.buildingScreen_occupancyError;
+      });
+    } catch (e) {
+      if (mounted && level == selectedLevel) onError(e);
+    }
   }
 
-  onError(var e) {
+  void onError(Object e) {
+    if (!mounted) return;
     setState(() {
       errorMessageOccupancyTable = e.toString();
     });
-    throw (e);
   }
 
   void openRoomPlan() async {
@@ -102,15 +106,32 @@ class _BuildingScreenState extends State<BuildingScreen> {
     return FutureBuilder<BuildingPageData>(
         future: widget.room,
         builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return Text(localizations.buildingScreen_NoData);
-          } else if (snapshot.hasError) {
+          if (snapshot.hasError) {
             return Text("${localizations.error}: ${snapshot.error}");
           }
+          if (!snapshot.hasData) return const SizedBox.shrink();
 
           final room = snapshot.data!;
           return widgetBuilder(room);
         });
+  }
+
+  String _filterLabel(layerFilterOptions option) {
+    if (Localizations.localeOf(context).languageCode != 'de')
+      return option.toString();
+    const names = [
+      'Raumbezeichnungen',
+      'Seminarräume',
+      'Toiletten',
+      'Barrierefreie Toiletten',
+      'Treppen',
+      'Aufzüge',
+      'Weitere Räume',
+      'WLAN',
+      'Defibrillatoren',
+      'Wickeltische'
+    ];
+    return names[option.index];
   }
 
   Widget filterOptionEntry(layerFilterOptions opt) {
@@ -120,8 +141,8 @@ class _BuildingScreenState extends State<BuildingScreen> {
           children: [
             Checkbox(
               value: selectedFilters.contains(opt),
-              activeColor: Styling.primaryColor.withAlpha(100),
-              checkColor: Theme.of(context).colorScheme.onSurface,
+              activeColor: Theme.of(context).colorScheme.primary,
+              checkColor: Theme.of(context).colorScheme.onPrimary,
               onChanged: (isSelected) {
                 if (isSelected == true) {
                   selectedFilters.add(opt);
@@ -137,7 +158,7 @@ class _BuildingScreenState extends State<BuildingScreen> {
             const SizedBox(width: 5),
             Icon(opt.icon),
             const SizedBox(width: 5),
-            Text(opt.toString()),
+            Expanded(child: Text(_filterLabel(opt))),
           ],
         );
       },
@@ -145,7 +166,7 @@ class _BuildingScreenState extends State<BuildingScreen> {
   }
 
   Widget levelSelectionMenu(BuildingPageData roomPage) {
-    List<DropdownMenuItem> options = [];
+    List<DropdownMenuItem<String>> options = [];
 
     for (BuildingLevel lev in roomPage.buildingData.levels) {
       options.add(DropdownMenuItem(
@@ -153,14 +174,33 @@ class _BuildingScreenState extends State<BuildingScreen> {
         value: lev.name,
       ));
     }
-    return DropdownButton(
+    return DropdownButton<String>(
+        underline: const SizedBox.shrink(),
+        borderRadius: BorderRadius.circular(8),
         value: selectedLevel,
         items: options,
         onChanged: (value) {
+          if (value == null || value == selectedLevel) return;
+          final previous = widget.room;
           setState(() {
             selectedLevel = value;
-            widget.room = BuildingPageData.fetchQuery(
-                "${roomPage.queryParts.first}/${value.split(" ").last}");
+            widget.room = value == _originalLevel
+                ? BuildingPageData.fetchQuery(_originalQuery!)
+                : BuildingPageData.fetchQuery(
+                    '${roomPage.queryParts.first}/${value.split(" ").last}');
+            if (!_ownedPages.contains(widget.room))
+              _ownedPages.add(widget.room);
+            isRoomSelected = value == _originalLevel && roomURL != null;
+            showOccupancyTable = false;
+            roomPlan = null;
+            errorMessageOccupancyTable = null;
+          });
+          // Keep decoded tiles for the current floor only. Returning to the
+          // original target reuses cached response bytes and its exact room URL.
+          _ownedPages.remove(previous);
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            previous.then((data) => data.backgroundImageData?.dispose(),
+                onError: (_) {});
           });
         });
   }
@@ -170,131 +210,144 @@ class _BuildingScreenState extends State<BuildingScreen> {
         ? Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              ElevatedButton(
-                  onPressed: () {
-                    loadOccupancyTable(localizations, currentLocale);
-                  },
-                  child: Text(showOccupancyTable
-                      ? localizations.buildingScreen_occupancyPlan_Hide
-                      : localizations.buildingScreen_occupancyPlan_Show)),
-              ElevatedButton(
+              Expanded(
+                  child: TextButton(
+                      onPressed: () {
+                        loadOccupancyTable(localizations, currentLocale);
+                      },
+                      child: Text(showOccupancyTable
+                          ? localizations.buildingScreen_occupancyPlan_Hide
+                          : localizations.buildingScreen_occupancyPlan_Show))),
+              IconButton(
+                  tooltip: localizations.buildingScreen_openinWeb,
                   onPressed: isRoomSelected ? openRoomPlan : null,
-                  child: const Icon(Icons.open_in_browser))
+                  icon: const Icon(Icons.open_in_browser))
             ],
           )
         : const SizedBox();
   }
 
+  Widget _details(localizations, currentLocale) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          occupancyButtons(localizations, currentLocale),
+          if (showOccupancyTable)
+            occupancyTableView(roomPlan, showOccupancyTable),
+          if (errorMessageOccupancyTable != null)
+            Padding(
+                padding: const EdgeInsets.all(8),
+                child: Text(errorMessageOccupancyTable!,
+                    style:
+                        TextStyle(color: Theme.of(context).colorScheme.error))),
+          const Divider(),
+          futurify(
+              (data) => adressSection(data, localizations, context: context),
+              localizations),
+        ],
+      );
+
+  Widget _toolbar(localizations) => Container(
+        height: 52,
+        decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            border: Border(
+                bottom: BorderSide(
+                    color: Theme.of(context).colorScheme.outlineVariant))),
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: Row(children: [
+          Expanded(
+              child: TextButton.icon(
+            icon: const Icon(Icons.layers_outlined, size: 20),
+            label: Text(
+                '${localizations.buildingScreen_FilterTitle} (${selectedFilters.length})',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis),
+            onPressed: () => showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                useSafeArea: true,
+                builder: (context) => FractionallySizedBox(
+                    heightFactor: 0.75,
+                    child: SingleChildScrollView(
+                        child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(children: [
+                              Text(localizations.buildingScreen_FilterOptions,
+                                  style:
+                                      Theme.of(context).textTheme.titleMedium),
+                              ...layerFilterOptions.values
+                                  .map(filterOptionEntry)
+                            ]))))),
+          )),
+          const SizedBox(width: 8),
+          Text(Localizations.localeOf(context).languageCode == 'de'
+              ? 'Etage'
+              : 'Floor'),
+          const SizedBox(width: 8),
+          futurify(levelSelectionMenu, localizations),
+        ]),
+      );
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    final currentLocale = AppLocalizations.of(context)!.localeName;
-
+    final currentLocale = localizations.localeName;
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.name),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.share),
-            tooltip: localizations.buildingScreen_openinWeb,
-            onPressed: () {
-              widget.room.then((value) {
-                Share.share('$baseURL/etplan/${value.queryParts.join("/")}');
-              });
-            },
-          ),
-        ],
-      ),
-      body: Stack(children: [
-        Column(children: [
-          DecoratedBox(
-            decoration: BoxDecoration(boxShadow: [
-              // Blur only on bottom
-              BoxShadow(
-                  blurRadius: 2.5,
-                  blurStyle: BlurStyle.normal,
-                  color: Theme.of(context).shadowColor.withAlpha(100),
-                  offset: const Offset(0, 2.5),
-                  spreadRadius: 0),
-            ], color: Theme.of(context).colorScheme.surface),
-            child: Padding(
-              padding: const EdgeInsets.only(left: 10, right: 10),
-              child: Row(children: [
-                TextButton(
-                    onPressed: () {
-                      showModalBottomSheet(
-                          context: context,
-                          builder: (BuildContext context) {
-                            List<Widget> opt = layerFilterOptions.values
-                                .map((e) => filterOptionEntry(e))
-                                .toList();
-                            opt.insert(
-                                0,
-                                Text(localizations.buildingScreen_FilterOptions,
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold)));
-                            return SingleChildScrollView(
-                                child: Padding(
-                                    padding: const EdgeInsets.all(10),
-                                    child: Column(children: opt)));
-                          });
-                    },
-                    child: Row(
-                      children: [
-                        Text(localizations.buildingScreen_FilterTitle +
-                            ": (${selectedFilters.length})"),
-                        const Icon(Icons.arrow_drop_down_sharp)
-                      ],
-                    )),
-                Row(
-                  children: [
-                    Text(localizations.buildingScreen_Floor),
-                    const SizedBox(width: 5),
-                    futurify(levelSelectionMenu, localizations)
-                  ],
-                )
-              ], mainAxisAlignment: MainAxisAlignment.spaceBetween),
-            ),
-          ),
-          Expanded(
-              flex: 1,
-              child: asyncFloorView(widget.room,
-                  size: Size(
-                      MediaQuery.sizeOf(context).width,
-                      // Necessary to prevent overflow
-                      MediaQuery.sizeOf(context).height * 0.9))),
-        ]),
-        DraggableBottomSheet(
-          name: localizations.buildingScreen_Location,
-          child: Column(
-            children: [
-              occupancyTableView(roomPlan, showOccupancyTable),
-              occupancyButtons(localizations, currentLocale),
-              errorMessageOccupancyTable != null
-                  ? Text(
-                      errorMessageOccupancyTable ?? "",
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.red),
-                    )
-                  : const SizedBox(),
-              Divider(
-                color: Theme.of(context).colorScheme.onSurface.withAlpha(100),
-              ),
-              FutureBuilder<BuildingPageData>(
-                  future: widget.room,
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData) {
-                      return Text(localizations.buildingScreen_NoData);
-                    } else if (snapshot.hasError) {
-                      return Text("${localizations.error}: ${snapshot.error}");
-                    }
-                    return adressSection(snapshot.data!, localizations);
-                  })
-            ],
-          ),
-        )
-      ]),
+          title:
+              Text(widget.name, style: Theme.of(context).textTheme.titleLarge),
+          actions: [
+            IconButton(
+                icon: const Icon(Icons.share),
+                tooltip: localizations.buildingScreen_openinWeb,
+                onPressed: () async {
+                  final data = await widget.room;
+                  if (!mounted) return;
+                  Share.share('$baseURL/etplan/${data.queryParts.join("/")}');
+                })
+          ]),
+      body: SafeArea(
+          top: false,
+          child: LayoutBuilder(builder: (context, constraints) {
+            final wide = constraints.maxWidth >= 840;
+            final details = _details(localizations, currentLocale);
+            final map = Column(children: [
+              _toolbar(localizations),
+              Expanded(
+                  child: wide
+                      ? asyncFloorView(widget.room)
+                      : Stack(children: [
+                          // The collapsed 64px header has its own space; the fit view is fully visible.
+                          Positioned.fill(
+                              bottom: 64, child: asyncFloorView(widget.room)),
+                          DraggableBottomSheet(
+                              name: widget.name, child: details),
+                        ])),
+            ]);
+            if (!wide) return map;
+            return Row(children: [
+              Expanded(child: map),
+              Container(
+                  width: 300,
+                  height: double.infinity,
+                  decoration: BoxDecoration(
+                      border: Border(
+                          left: BorderSide(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .outlineVariant))),
+                  child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(widget.name,
+                                style: Theme.of(context).textTheme.titleMedium),
+                            const SizedBox(height: 12),
+                            details,
+                          ]))),
+            ]);
+          })),
     );
   }
 }
