@@ -77,4 +77,71 @@ void main() {
     expect(planBounds(empty).width, greaterThan(0));
     expect(mapPoints([1, 2, 3]), [const Offset(1, 2)]);
   });
+
+  test('raster filters retain blue details, transparency and light RGB',
+      () async {
+    for (final dark in [false, true]) {
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder);
+      final paint = Paint()..colorFilter = MapPainter.tileFilter(dark, .5);
+      canvas.drawRect(const Rect.fromLTWH(0, 0, 1, 1),
+          paint..color = const Color(0xff9c98f5));
+      canvas.drawRect(const Rect.fromLTWH(1, 0, 1, 1),
+          paint..color = const Color(0x40575757));
+      canvas.drawRect(const Rect.fromLTWH(2, 0, 1, 1),
+          paint..color = const Color(0x00575757));
+      final picture = recorder.endRecording();
+      final image = await picture.toImage(3, 1);
+      final bytes =
+          (await image.toByteData(format: ui.ImageByteFormat.rawStraightRgba))!;
+      expect(bytes.getUint8(2), greaterThan(bytes.getUint8(0)));
+      expect(bytes.getUint8(2), greaterThan(bytes.getUint8(1)));
+      if (!dark) {
+        expect(bytes.getUint8(0), closeTo(156, 1));
+        expect(bytes.getUint8(1), closeTo(152, 1));
+        expect(bytes.getUint8(2), closeTo(245, 1));
+      }
+      expect(bytes.getUint8(7), greaterThan(64));
+      expect(bytes.getUint8(11), 0);
+      image.dispose();
+      picture.dispose();
+    }
+  });
+
+  testWidgets('target outline stays thin as the InteractiveViewer zooms',
+      (tester) async {
+    APIServices.Shared.storage.filterSet.remove(layerFilterOptions.Labeling);
+    final floor = syntheticFloor();
+    for (final zoom in [1.0, 2.0, 3.0]) {
+      final transform =
+          TransformationController(Matrix4.identity()..scale(zoom));
+      late MapPainter painter;
+      await tester.pumpWidget(MaterialApp(home: Builder(builder: (context) {
+        painter = MapPainter(
+            roomResult: floor, context: context, transformation: transform);
+        return const SizedBox();
+      })));
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder)
+        ..translate(200.0, 200.0)
+        ..scale(zoom)
+        ..translate(-235.0, -235.0);
+      painter.paint(canvas, const Size(400, 400));
+      final picture = recorder.endRecording();
+      final image = await tester.runAsync(() => picture.toImage(400, 400));
+      final bytes = (await tester.runAsync(() => image!.toByteData()))!;
+      var strokePixels = 0;
+      final left = (200 - 35 * zoom).round();
+      for (var x = left - 4; x <= left + 4; x++) {
+        final offset = (200 * 400 + x) * 4;
+        if (bytes.getUint8(offset) > 100 && bytes.getUint8(offset + 1) < 100) {
+          strokePixels++;
+        }
+      }
+      expect(strokePixels, inInclusiveRange(1, 2), reason: 'zoom $zoom');
+      image!.dispose();
+      picture.dispose();
+      transform.dispose();
+    }
+  });
 }

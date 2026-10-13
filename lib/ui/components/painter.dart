@@ -34,30 +34,76 @@ class MapPainter extends CustomPainter {
                 [roomResult.backgroundImageData, transformation]));
 
   static const darkBackground = Color(0xff161c20);
-  // Invert RGB with a restrained luminance range. Preserve alpha: the plans
-  // contain transparent space which must stay transparent over room fills.
+  // Invert luminance, retain chroma: blue/violet technical details must not
+  // become yellow. Transparent pixels remain transparent (no alpha offset).
   static const darkTileFilter = ColorFilter.matrix([
-    -0.82,
+    .298108,
+    -1.015584,
+    -.102524,
     0,
+    245,
+    -.301892,
+    -.415584,
+    -.102524,
     0,
+    245,
+    -.301892,
+    -1.015584,
+    .497476,
     0,
-    235,
-    0,
-    -0.82,
-    0,
-    0,
-    239,
-    0,
-    0,
-    -0.82,
-    0,
-    242,
+    245,
     0,
     0,
     0,
     1,
     0,
   ]);
+
+  static ColorFilter tileFilter(bool dark, double screenScale) {
+    // Strengthen partial coverage when the original fine lines are reduced.
+    // This is a GPU matrix, not per-frame CPU pixel processing/dilation.
+    final alpha = 1 + (dark ? 1.2 : .8) / (1 + screenScale);
+    return ColorFilter.matrix([
+      if (dark) ...[
+        .298108,
+        -1.015584,
+        -.102524,
+        0,
+        245,
+        -.301892,
+        -.415584,
+        -.102524,
+        0,
+        245,
+        -.301892,
+        -1.015584,
+        .497476,
+        0,
+        245,
+      ] else ...[
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+      ],
+      0,
+      0,
+      0,
+      alpha,
+      0,
+    ]);
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -84,7 +130,8 @@ class MapPainter extends CustomPainter {
       for (final room in entry.value) {
         if (room.fill == null) continue;
         final color = fromHex(room.fill!);
-        _drawRoom(canvas, room, color.withAlpha(dark ? 55 : 100));
+        _drawRoom(canvas, room,
+            color.withOpacity(color.opacity * (dark ? .12 : .18)));
       }
     }
     final selected = roomResult.rooms['highlightedRoom'] ??
@@ -92,7 +139,7 @@ class MapPainter extends CustomPainter {
         [];
     for (final room in selected) {
       _drawRoom(canvas, room,
-          dark ? const Color(0xff823e33) : const Color(0xfff5c7ba));
+          dark ? const Color(0x50ff8b6d) : const Color(0x40ed7659));
     }
 
     final images = roomResult.backgroundImageData;
@@ -101,8 +148,9 @@ class MapPainter extends CustomPainter {
       final tileSize = roomResult.numberVariables['subpics_size']! / step;
       final origin = Offset(-roomResult.numberVariables['data_canv_width']! / 2,
           -roomResult.numberVariables['data_canv_height']! / 2);
-      final paint = Paint()..filterQuality = FilterQuality.medium;
-      if (dark) paint.colorFilter = darkTileFilter;
+      final paint = Paint()
+        ..filterQuality = FilterQuality.medium
+        ..colorFilter = tileFilter(dark, screenScale);
       for (var x = 0; x < images.width; x++) {
         for (var y = 0; y < images.height; y++) {
           final image = images.getBackgroundImage(x, y);
