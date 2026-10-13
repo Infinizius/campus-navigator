@@ -11,6 +11,12 @@ const requestTimeout = Duration(seconds: 25);
 
 extension APIServices_Util on BaseAPIServices {
   Future<ui.Image?> fetchImage(Uri uri) async {
+    return (await fetchImageResult(uri)).image;
+  }
+
+  /// Empty HTTP-200 bodies are valid blank plan tiles on the TU server.
+  /// Keep them distinct from errors without allocating a transparent bitmap.
+  Future<({ui.Image? image, bool empty})> fetchImageResult(Uri uri) async {
     final key = uri.toString();
     final pending = pendingImages.putIfAbsent(key, () => _imageBytes(uri));
     List<int>? bytes;
@@ -19,8 +25,9 @@ extension APIServices_Util on BaseAPIServices {
     } finally {
       if (identical(pendingImages[key], pending)) pendingImages.remove(key);
     }
-    if (bytes == null || bytes.isEmpty) return null;
-    return decodeImage(Uint8List.fromList(bytes));
+    if (bytes == null) return (image: null, empty: false);
+    if (bytes.isEmpty) return (image: null, empty: true);
+    return (image: await decodeImage(Uint8List.fromList(bytes)), empty: false);
   }
 
   Future<List<int>?> _imageBytes(Uri uri) async {

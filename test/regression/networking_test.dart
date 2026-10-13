@@ -117,4 +117,20 @@ void main() {
     api.client = oldClient;
     api.cacheManager = oldCache;
   });
+
+  test('blank HTTP-200 tiles are valid, HTTP failures and corrupt PNGs are not',
+      () async {
+    APIServices.Shared.client = MockClient((request) async {
+      final path = request.url.path;
+      if (path.contains('/0_0.png')) return http.Response('', 200);
+      if (path.contains('/1_0.png')) return http.Response('', 503);
+      return http.Response('not a PNG', 200);
+    });
+    final images = PageImageData.fetchLevelImages('TEST', [], [(h: 3, v: 1)],
+        qualiIndex: 0);
+    await images.loaded;
+    expect(images.failedImages, 2);
+    expect(images.imageMap, isEmpty);
+    images.dispose();
+  });
 }

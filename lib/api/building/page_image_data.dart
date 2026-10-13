@@ -47,8 +47,11 @@ class PageImageData with ChangeNotifier {
       while (!_disposed && next < tasks.length) {
         final task = tasks[next++];
         ui.Image? image;
+        var emptyTile = false;
         try {
-          image = await APIServices.Shared.fetchImage(task.value);
+          final result = await APIServices.Shared.fetchImageResult(task.value);
+          image = result.image;
+          emptyTile = result.empty && RegExp(r'^\d+_\d+$').hasMatch(task.key);
         } catch (_) {
           // A missing tile must not break the other workers or leak an error.
         }
@@ -56,9 +59,9 @@ class PageImageData with ChangeNotifier {
           image?.dispose();
           return;
         }
-        if (image == null) {
+        if (image == null && !emptyTile) {
           failedImages++;
-        } else {
+        } else if (image != null) {
           imageMap[task.key] = image;
         }
         notifyListeners();
