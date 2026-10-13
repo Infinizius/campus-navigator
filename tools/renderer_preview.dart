@@ -13,10 +13,12 @@ import 'package:campus_navigator/api/building/page_image_data.dart';
 import 'package:campus_navigator/ui/components/painter.dart';
 import 'package:campus_navigator/ui/styling.dart';
 import 'akora_painter.dart' as akora;
+import 'baseline_painter.dart' as baseline;
 
 const host = 'http://10.0.2.2:8765';
 void main() {
   APIServices.Shared = APIServices.withoutCache();
+  APIServices.Shared.client = FixtureClient();
   APIServices.Shared.storage.filterSet = layerFilterOptions.values.toSet();
   runApp(const Preview());
 }
@@ -29,6 +31,10 @@ class Preview extends StatefulWidget {
 
 class _PreviewState extends State<Preview> {
   final transform = TransformationController();
+  final paintTransform = ValueNotifier<Matrix4>(Matrix4.identity());
+  final frameTimings = <ui.FrameTiming>[];
+  bool benchmarking = false;
+  String? lastBenchmark;
   Timer? timer;
   BuildingPageData? floor;
   Map<String, dynamic> config = {};
@@ -39,8 +45,65 @@ class _PreviewState extends State<Preview> {
   @override
   void initState() {
     super.initState();
+    transform.addListener(updatePaintScale);
+    WidgetsBinding.instance.addTimingsCallback(recordTimings);
     timer = Timer.periodic(const Duration(milliseconds: 500), (_) => refresh());
     refresh();
+  }
+
+  void updatePaintScale() {
+    if (paintTransform.value.getMaxScaleOnAxis() !=
+        transform.value.getMaxScaleOnAxis()) {
+      paintTransform.value = transform.value.clone();
+    }
+  }
+
+  void recordTimings(List<ui.FrameTiming> values) {
+    if (benchmarking) frameTimings.addAll(values);
+  }
+
+  Future<void> benchmark(String kind) async {
+    final original = transform.value.clone();
+    frameTimings.clear();
+    benchmarking = true;
+    for (var frame = 0; frame < 240 && mounted; frame++) {
+      final phase = frame / 240 * pi * 4;
+      transform.value = original.clone()
+        ..translate(sin(phase) * 25, cos(phase) * 15)
+        ..scale(kind == 'zoom' ? 1 + .15 * sin(phase) : 1.0);
+      await WidgetsBinding.instance.endOfFrame;
+    }
+    await Future<void>.delayed(const Duration(seconds: 1));
+    benchmarking = false;
+    transform.value = original;
+    final timings = frameTimings.skip(20).toList();
+    Map<String, dynamic> stats(List<double> values) {
+      values.sort();
+      if (values.isEmpty) return {'frames': 0};
+      return {
+        'median_ms': values[values.length ~/ 2],
+        'p95_ms': values[(values.length * .95).floor()],
+        'over_16_7_ms': values.where((v) => v > 16.7).length,
+      };
+    }
+
+    final images = floor!.backgroundImageData!;
+    debugPrint('RENDER_BENCH ${jsonEncode({
+          'kind': kind,
+          'baseline': config['baseline'] == true,
+          'floor': config['floor'],
+          'frames': timings.length,
+          'tile_step': images.qualiStep,
+          'decoded_mib': images.imageMap.values.fold<int>(
+                  0, (sum, image) => sum + image.width * image.height * 4) /
+              (1024 * 1024),
+          'build': stats(timings
+              .map((t) => t.buildDuration.inMicroseconds / 1000)
+              .toList()),
+          'raster': stats(timings
+              .map((t) => t.rasterDuration.inMicroseconds / 1000)
+              .toList()),
+        })}');
   }
 
   Future<void> refresh() async {
@@ -50,7 +113,10 @@ class _PreviewState extends State<Preview> {
       final response = await http.get(Uri.parse('$host/scenario.json'));
       if (response.body == lastConfig) return;
       final next = jsonDecode(response.body) as Map<String, dynamic>;
-      if (next['floor'] != config['floor'] || next['room'] != config['room']) {
+      if (next['floor'] != config['floor'] ||
+          next['room'] != config['room'] ||
+          next['legacy'] != config['legacy'] ||
+          next['baseline'] != config['baseline']) {
         final old = floor;
         setState(() {
           floor = null;
@@ -60,39 +126,29 @@ class _PreviewState extends State<Preview> {
         old?.backgroundImageData?.dispose();
         final name = next['floor'] as String;
         final parts = [name.substring(0, 3), name.substring(3)];
-        if (next['room'] != null)
+        if (next['room'] != null) {
           parts.addAll(['raum', next['room'] as String]);
+        }
         final body = await http.get(Uri.parse('$host/$name.html'));
         final data = BuildingPageData.fromHTMLText(body.body, parts);
-        final images = PageImageData(qualiStep: 8, imageMap: {})
-          ..width = data.subpics[3].h
-          ..height = data.subpics[3].v;
-        final jobs = <String, String>{};
-        for (var x = 0; x < images.width; x++) {
-          for (var y = 0; y < images.height; y++) {
-            jobs['${x}_$y'] = '${data.pngFileName}_8_${x}_$y.png';
-          }
-        }
-        for (final layer in data.layers.where((l) => l.symbol.isNotEmpty)) {
-          jobs[layer.symbolPNG] = layer.symbolPNG;
-        }
-        final entries = jobs.entries.toList();
-        var index = 0;
-        Future<void> worker() async {
-          while (index < entries.length) {
-            final entry = entries[index++];
-            final bytes =
-                (await http.get(Uri.parse('$host/${entry.value}'))).bodyBytes;
-            if (bytes.isEmpty) continue; // Server's empty HTTP-200 tiles.
-            final codec = await ui.instantiateImageCodec(bytes);
-            images.imageMap[entry.key] = (await codec.getNextFrame()).image;
-            codec.dispose();
-          }
-        }
-
-        await Future.wait(List.generate(4, (_) => worker()));
+        final images = PageImageData.fetchLevelImages(
+            data.pngFileName, data.layers, data.subpics,
+            adaptive: next['legacy'] != true && next['baseline'] != true);
+        await images.loaded;
         data.backgroundImageData = images;
         floor = data;
+      }
+      if (next['legacy'] != true && next['baseline'] != true) {
+        final view = WidgetsBinding.instance.platformDispatcher.views.first;
+        final size = view.physicalSize / view.devicePixelRatio;
+        final bounds = planBounds(floor!);
+        final fit =
+            min(size.width / bounds.width, (size.height - 104) / bounds.height);
+        final zoom = next['view'] == 'fit'
+            ? 1.0
+            : (next['zoom'] as num? ?? 3).toDouble();
+        await floor!.backgroundImageData!.setResolutionForScale(
+            fit * zoom * sqrt(view.devicePixelRatio.clamp(1.0, 4.0)));
       }
       setState(() {
         config = next;
@@ -111,7 +167,10 @@ class _PreviewState extends State<Preview> {
   @override
   void dispose() {
     timer?.cancel();
+    WidgetsBinding.instance.removeTimingsCallback(recordTimings);
+    transform.removeListener(updatePaintScale);
     transform.dispose();
+    paintTransform.dispose();
     floor?.backgroundImageData?.dispose();
     super.dispose();
   }
@@ -152,6 +211,15 @@ class _PreviewState extends State<Preview> {
                         ..translate(size.width / 2 - point.dx * zoom,
                             size.height / 2 - point.dy * zoom)
                         ..scale(zoom);
+                      final kind = config['benchmark'] as String?;
+                      final key =
+                          '${config['baseline']}:$kind:${config['run']}';
+                      if (kind != null &&
+                          key != lastBenchmark &&
+                          !benchmarking) {
+                        lastBenchmark = key;
+                        benchmark(kind);
+                      }
                     });
                   }
                   return ClipRect(
@@ -166,15 +234,33 @@ class _PreviewState extends State<Preview> {
                       painter: config['legacy'] == true
                           ? AlignedAkoraPainter(
                               roomResult: data, context: context)
-                          : MapPainter(
-                              roomResult: data,
-                              context: context,
-                              transformation: transform),
+                          : config['baseline'] == true
+                              ? baseline.BaselineMapPainter(
+                                  roomResult: data, context: context)
+                              : MapPainter(
+                                  roomResult: data,
+                                  context: context,
+                                  transformation: paintTransform),
                     )),
                   ));
                 }),
         ),
       );
+}
+
+// Run the production tile loader against the frozen original HTTP responses.
+class FixtureClient extends http.BaseClient {
+  final _client = http.Client();
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) {
+    final parts = request.url.pathSegments;
+    final filename =
+        parts.contains('etplan_cache') ? '${parts[2]}_${parts[3]}' : parts.last;
+    return _client.send(http.Request('GET', Uri.parse('$host/$filename')));
+  }
+
+  @override
+  void close() => _client.close();
 }
 
 // Compare the original drawing logic in the same coordinate extent/camera.

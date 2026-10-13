@@ -35,6 +35,14 @@ def fetch(item):
 
 jobs = {}
 metadata = []
+ROOT.mkdir(parents=True, exist_ok=True)
+for floor, room in [('bey00', '111100.5360'), ('bey03', '111103.5220'), ('apb00', '542100.2860')]:
+    path = ROOT / f'{floor}.html'
+    if not path.exists():
+        url = f'{BASE}/etplan/{floor[:3]}/{floor[3:]}/raum/{room}'
+        with urllib.request.urlopen(url, timeout=30) as response:
+            body = response.read().decode(response.headers.get_content_charset() or 'utf-8')
+        path.write_text(body, encoding='utf-8')
 for floor in ('bey00', 'bey03', 'apb00'):
     body = (ROOT / f'{floor}.html').read_text(encoding='utf-8', errors='replace')
     prefix = re.search(r'var png_file_name = "([^"]+)"', body)[1]
@@ -43,7 +51,7 @@ for floor in ('bey00', 'bey03', 'apb00'):
     click = json.loads(re.search(r'this\.raumclick = (\{[^;]+)', body)[1])
     wanted = [v[:2] for v in click.values() if v[1] in ('E25', 'E26', '318', '319A', 'E069')]
     metadata.append({'floor': floor, 'prefix': prefix, 'width': width, 'height': height, 'rooms': wanted})
-    for step in (1, 8):
+    for step in (1, 2, 4, 8):
         for x in range(math.ceil(width * step / 480)):
             for y in range(math.ceil(height * step / 480)):
                 jobs[f'{prefix}_{step}_{x}_{y}.png'] = f'{BASE}/images/etplan_cache/{prefix}_{step}/{x}_{y}.png/nobase64'
