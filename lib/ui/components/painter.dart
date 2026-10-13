@@ -120,8 +120,20 @@ class MapPainter extends CustomPainter {
     canvas.scale(scale);
     canvas.translate(-drawingArea.left, -drawingArea.top);
 
+    // The server supplies exact circulation polygons with a null fill. Paint
+    // them beneath every room and the original raster, without inferring an
+    // interior from the building's bounding box (which would fill courtyards).
+    for (final layer in ['korridorData', 'vestibulesData']) {
+      for (final room in roomResult.rooms[layer] ?? <RoomPolygon>[]) {
+        _drawRoom(canvas, room,
+            dark ? const Color(0xff303f46) : const Color(0xffdce6e9));
+      }
+    }
     for (final entry in roomResult.rooms.entries) {
-      if (entry.key == 'highlightedRoom' || entry.key == 'hightlightedRoom') {
+      if (entry.key == 'highlightedRoom' ||
+          entry.key == 'hightlightedRoom' ||
+          entry.key == 'korridorData' ||
+          entry.key == 'vestibulesData') {
         continue;
       }
       final filter = layerFilterOptions.values
@@ -257,9 +269,12 @@ class MapPainter extends CustomPainter {
       final text = label.qy.replaceAll(RegExp(r'\s+'), ' ').trim();
       if (text.isEmpty) continue;
       final selected = identical(label, selectedLabel);
-      // Server positions/extents remain in plan units; typography is bounded
-      // in logical screen pixels, including InteractiveViewer's zoom.
-      var font = (selected ? 16.0 : 12.0) / screenScale;
+      // Larger screen typography grows gently with zoom, bounded like the
+      // website's 24px ceiling. Server extents still constrain small rooms.
+      final zoom = transformation?.value.getMaxScaleOnAxis() ?? 1;
+      final screenFont =
+          (selected ? 18.0 : 14.0) + 2 * (zoom.clamp(1.0, 4.0) - 1);
+      var font = screenFont / screenScale;
       if (label.th != null && label.th! > 0) {
         font = min(font,
             label.th! * roomResult.numberVariables['data_canv_height']! * 1.1);

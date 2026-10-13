@@ -1,6 +1,8 @@
 import 'dart:ui' as ui;
 import 'package:campus_navigator/api/api_services.dart';
 import 'package:campus_navigator/api/building/building_page_data.dart';
+import 'package:campus_navigator/api/building/page_image_data.dart';
+import 'package:campus_navigator/api/building/parsing/room_polygon.dart';
 import 'package:campus_navigator/api/storage.dart';
 import 'package:campus_navigator/ui/components/painter.dart';
 import 'package:flutter/material.dart';
@@ -76,6 +78,66 @@ void main() {
         queryParts: []);
     expect(planBounds(empty).width, greaterThan(0));
     expect(mapPoints([1, 2, 3]), [const Offset(1, 2)]);
+  });
+
+  testWidgets('circulation fills stay inside server polygons and below walls',
+      (tester) async {
+    APIServices.Shared.storage.filterSet.remove(layerFilterOptions.Labeling);
+    final floor = syntheticFloor();
+    floor.rooms['korridorData'] = [
+      const RoomPolygon(points: [
+        [-80, -60, -40, -60, -40, -20, -80, -20]
+      ], fill: null)
+    ];
+    floor.rooms['vestibulesData'] = [
+      const RoomPolygon(points: [
+        [-40, -60, -20, -60, -20, -20, -40, -20]
+      ], fill: null)
+    ];
+    final rasterRecorder = ui.PictureRecorder();
+    Canvas(rasterRecorder).drawRect(
+        const Rect.fromLTWH(20, 40, 40, 1), Paint()..color = Colors.black);
+    final rasterPicture = rasterRecorder.endRecording();
+    final raster = await tester.runAsync(() => rasterPicture.toImage(200, 160));
+    rasterPicture.dispose();
+    floor.backgroundImageData =
+        PageImageData(qualiStep: 1, imageMap: {'0_0': raster!})
+          ..width = 1
+          ..height = 1;
+    for (final dark in [false, true]) {
+      late MapPainter painter;
+      await tester.pumpWidget(MaterialApp(
+          theme:
+              ThemeData(brightness: dark ? Brightness.dark : Brightness.light),
+          home: Builder(builder: (context) {
+            painter = MapPainter(roomResult: floor, context: context);
+            return const SizedBox();
+          })));
+      await tester.pumpAndSettle();
+      final recorder = ui.PictureRecorder();
+      painter.paint(Canvas(recorder), const Size(200, 160));
+      final picture = recorder.endRecording();
+      final image = await tester.runAsync(() => picture.toImage(200, 160));
+      final bytes = (await tester.runAsync(() =>
+          image!.toByteData(format: ui.ImageByteFormat.rawStraightRgba)))!;
+      Color pixel(int x, int y) {
+        final i = (y * 200 + x) * 4;
+        return Color.fromARGB(bytes.getUint8(i + 3), bytes.getUint8(i),
+            bytes.getUint8(i + 1), bytes.getUint8(i + 2));
+      }
+
+      final background = dark ? MapPainter.darkBackground : Colors.white;
+      final corridor = dark ? const Color(0xff303f46) : const Color(0xffdce6e9);
+      expect(pixel(40, 35), corridor);
+      expect(pixel(70, 35), corridor);
+      expect(pixel(10, 10), background);
+      expect(pixel(90, 40), background);
+      expect(pixel(40, 40), dark ? const Color(0xfff5f5f5) : Colors.black);
+      image!.dispose();
+      picture.dispose();
+    }
+    await tester.pumpWidget(const SizedBox());
+    floor.backgroundImageData!.dispose();
   });
 
   test('raster filters retain blue details, transparency and light RGB',
