@@ -19,13 +19,19 @@ class MapPainter extends CustomPainter {
   final Set<layerFilterOptions> filters;
   final Color labelColor;
   final Rect drawingArea;
+  final ValueListenable<Matrix4>? transformation;
 
-  MapPainter({required this.roomResult, required BuildContext context})
+  MapPainter(
+      {required this.roomResult,
+      required BuildContext context,
+      this.transformation})
       : brightness = Theme.of(context).brightness,
         labelColor = Theme.of(context).colorScheme.onSurface,
         filters = Set.of(APIServices.Shared.storage.filterSet),
         drawingArea = planBounds(roomResult),
-        super(repaint: roomResult.backgroundImageData);
+        super(
+            repaint: Listenable.merge(
+                [roomResult.backgroundImageData, transformation]));
 
   static const darkBackground = Color(0xff161c20);
   // Invert RGB with a restrained luminance range. Preserve alpha: the plans
@@ -60,6 +66,8 @@ class MapPainter extends CustomPainter {
     final scale =
         min(size.width / drawingArea.width, size.height / drawingArea.height);
     if (!scale.isFinite || scale <= 0) return;
+    final screenScale =
+        scale * (transformation?.value.getMaxScaleOnAxis() ?? 1);
     canvas.save();
     canvas.translate((size.width - drawingArea.width * scale) / 2,
         (size.height - drawingArea.height * scale) / 2);
@@ -139,13 +147,13 @@ class MapPainter extends CustomPainter {
             polygonPath(points),
             Paint()
               ..style = PaintingStyle.stroke
-              ..strokeWidth = 1.5 / scale
+              ..strokeWidth = 1.4 / screenScale
               ..color =
                   dark ? const Color(0xffffb4a0) : const Color(0xff922c18));
       }
     }
     if (filters.contains(layerFilterOptions.Labeling))
-      _drawLabels(canvas, dark);
+      _drawLabels(canvas, dark, screenScale);
     canvas.restore();
   }
 
@@ -155,7 +163,7 @@ class MapPainter extends CustomPainter {
     }
   }
 
-  void _drawLabels(Canvas canvas, bool dark) {
+  void _drawLabels(Canvas canvas, bool dark, double screenScale) {
     final target = roomResult.selectedRoom;
     final labels = roomResult.raumBezData.text;
     final selectedLabel = target == null
@@ -166,62 +174,93 @@ class MapPainter extends CustomPainter {
                 target.polygon.points
                     .any((p) => polygonPath(p).contains(Offset(l.x, l.y))))
             .firstOrNull;
-    TextPainter layout(String text, double fontSize, Color color) {
+    TextPainter layout(String text, double fontSize, Color color,
+        {bool halo = false}) {
       final painter = TextPainter(
           text: TextSpan(
               text: text,
               style: TextStyle(
                   fontSize: fontSize,
                   height: 1.1,
-                  color: color,
+                  color: halo ? null : color,
+                  foreground: halo
+                      ? (Paint()
+                        ..style = PaintingStyle.stroke
+                        ..strokeWidth = 1.2 / screenScale
+                        ..color = dark ? darkBackground : Colors.white)
+                      : null,
                   fontFamily: 'Roboto',
-                  shadows: [
-                    Shadow(
-                        color: dark ? darkBackground : Colors.white,
-                        blurRadius: 2)
-                  ])),
+                  fontWeight: FontWeight.w500)),
           textDirection: TextDirection.ltr,
+          maxLines: 1,
           textAlign: TextAlign.center);
       painter.layout();
       return painter;
     }
 
-    Rect? targetLabelRect;
-    TextPainter? targetPainter;
-    if (selectedLabel != null) {
-      targetPainter = layout(selectedLabel.qy, 20,
-          dark ? const Color(0xffffe3da) : const Color(0xff651b0d));
-      targetLabelRect = Rect.fromCenter(
-          center: Offset(selectedLabel.x, selectedLabel.y),
-          width: targetPainter.width + 6,
-          height: targetPainter.height + 4);
-    }
-    for (final label in labels) {
-      if (identical(label, selectedLabel) || label.qy.isEmpty) continue;
-      final font = label.th != null && label.th! > 0
-          ? (label.th! * roomResult.numberVariables['data_canv_height']! * 1.1)
-              .clamp(1.0, 16.0)
-          : min(16.0,
-              min(label.my * 0.65, label.mx / max(1, label.qy.length) * 1.4));
+    final occupied = <Rect>[];
+    final ordered = [
+      if (selectedLabel != null) selectedLabel,
+      ...labels.where((l) => !identical(l, selectedLabel))
+    ];
+    for (final label in ordered) {
+      final text = label.qy.replaceAll(RegExp(r'\s+'), ' ').trim();
+      if (text.isEmpty) continue;
+      final selected = identical(label, selectedLabel);
+      // Server positions/extents remain in plan units; typography is bounded
+      // in logical screen pixels, including InteractiveViewer's zoom.
+      var font = (selected ? 16.0 : 12.0) / screenScale;
+      if (label.th != null && label.th! > 0) {
+        font = min(font,
+            label.th! * roomResult.numberVariables['data_canv_height']! * 1.1);
+      }
+      final probe = layout(text, font, labelColor);
+      if (label.mx > 0 && label.my > 0) {
+        font *= min(1.0,
+            min(label.mx * .85 / probe.width, label.my * .7 / probe.height));
+      }
+      probe.dispose();
       if (font <= 0 || !font.isFinite) continue;
-      final painter =
-          layout(label.qy, font, dark ? const Color(0xffedf1f3) : labelColor);
-      final rect = Rect.fromCenter(
-          center: Offset(label.x, label.y),
-          width: painter.width,
-          height: painter.height);
-      // Suppress only labels that would actually overwrite the selected label.
-      if (targetLabelRect != null && rect.overlaps(targetLabelRect)) continue;
-      painter.paint(canvas, rect.topLeft);
+      if (!selected && font * screenScale < 6) continue;
+      final color = selected
+          ? (dark ? const Color(0xffffe3da) : const Color(0xff651b0d))
+          : (dark ? const Color(0xffedf1f3) : labelColor);
+      final painter = layout(text, font, color);
+      final origin = Offset(label.x, label.y);
+      final maxShift = label.mx > 0 && label.my > 0
+          ? min(12 / screenScale, min(label.mx, label.my) * .2)
+          : 0.0;
+      final offsets = [
+        Offset.zero,
+        if (!selected && maxShift > 0)
+          for (final direction in [
+            const Offset(0, 1),
+            const Offset(0, -1),
+            const Offset(1, 0),
+            const Offset(-1, 0)
+          ])
+            direction * maxShift
+      ];
+      Rect? placed;
+      for (final offset in offsets) {
+        final rect = Rect.fromCenter(
+            center: origin + offset,
+            width: painter.width,
+            height: painter.height);
+        if (occupied.every((r) => !r.overlaps(rect.inflate(1 / screenScale)))) {
+          placed = rect;
+          break;
+        }
+      }
+      if (placed != null) {
+        occupied.add(placed);
+        // A narrow glyph halo, never an opaque label rectangle over doors.
+        final halo = layout(text, font, color, halo: true);
+        halo.paint(canvas, placed.topLeft);
+        halo.dispose();
+        painter.paint(canvas, placed.topLeft);
+      }
       painter.dispose();
-    }
-    if (targetPainter != null && targetLabelRect != null) {
-      canvas.drawRRect(
-          RRect.fromRectAndRadius(targetLabelRect, const Radius.circular(2)),
-          Paint()
-            ..color = dark ? const Color(0xff47251d) : const Color(0xffffe8e0));
-      targetPainter.paint(canvas, targetLabelRect.topLeft + const Offset(3, 2));
-      targetPainter.dispose();
     }
   }
 
@@ -230,6 +269,7 @@ class MapPainter extends CustomPainter {
       !identical(roomResult, old.roomResult) ||
       brightness != old.brightness ||
       labelColor != old.labelColor ||
+      transformation != old.transformation ||
       !setEquals(filters, old.filters);
 
   Rect calculateDrawingArea() => drawingArea;

@@ -69,8 +69,10 @@ class _FloorViewState extends State<FloorView> {
           maxScale: 16,
           child: RepaintBoundary(
               child: CustomPaint(
-                  painter:
-                      MapPainter(roomResult: widget.data, context: context),
+                  painter: MapPainter(
+                      roomResult: widget.data,
+                      context: context,
+                      transformation: _transform),
                   size: constraints.biggest)),
         ))),
         Positioned(
