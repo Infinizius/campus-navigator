@@ -18,10 +18,12 @@ import '../components/floor_view.dart';
 import '../components/occupancyTableView.dart';
 
 class BuildingScreen extends StatefulWidget {
-  BuildingScreen({super.key, required this.room, required this.name});
+  BuildingScreen(
+      {super.key, required this.room, required this.name, this.favoriteAction});
 
   Future<BuildingPageData> room;
   final String name;
+  final Widget? favoriteAction;
 
   @override
   State<BuildingScreen> createState() => _BuildingScreenState();
@@ -297,6 +299,7 @@ class _BuildingScreenState extends State<BuildingScreen> {
           title:
               Text(widget.name, style: Theme.of(context).textTheme.titleLarge),
           actions: [
+            if (widget.favoriteAction != null) widget.favoriteAction!,
             IconButton(
                 icon: const Icon(Icons.share),
                 tooltip: localizations.buildingScreen_openinWeb,
