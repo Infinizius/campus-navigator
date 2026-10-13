@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:campus_navigator/api/building/building_page_data.dart';
 import 'painter.dart';
@@ -12,13 +13,46 @@ class FloorView extends StatefulWidget {
 
 class _FloorViewState extends State<FloorView> {
   final _transform = TransformationController();
+  final _paintTransform = ValueNotifier<Matrix4>(Matrix4.identity());
   bool _positioned = false;
+  Timer? _qualityTimer;
+  Size? _viewport;
+  double _pixelRatio = 1;
+  double? _lastRasterScale;
+  @override
+  void initState() {
+    super.initState();
+    _transform.addListener(_scheduleResolution);
+  }
+
+  void _scheduleResolution() {
+    if (_paintTransform.value.getMaxScaleOnAxis() !=
+        _transform.value.getMaxScaleOnAxis()) {
+      _paintTransform.value = _transform.value.clone();
+    }
+    final size = _viewport;
+    if (size == null) return;
+    final bounds = planBounds(widget.data);
+    final scale = min(size.width / bounds.width, size.height / bounds.height) *
+        _transform.value.getMaxScaleOnAxis() *
+        sqrt(_pixelRatio.clamp(1.0, 4.0));
+    if (scale == _lastRasterScale) return; // Panning does not fetch tiles.
+    _lastRasterScale = scale;
+    _qualityTimer?.cancel();
+    _qualityTimer = Timer(const Duration(milliseconds: 140), () {
+      if (mounted) {
+        widget.data.backgroundImageData?.setResolutionForScale(scale);
+      }
+    });
+  }
+
   @override
   void didUpdateWidget(FloorView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!identical(oldWidget.data, widget.data)) {
       _transform.value = Matrix4.identity();
       _positioned = false;
+      _lastRasterScale = null;
     }
   }
 
@@ -50,7 +84,10 @@ class _FloorViewState extends State<FloorView> {
 
   @override
   void dispose() {
+    _qualityTimer?.cancel();
+    _transform.removeListener(_scheduleResolution);
     _transform.dispose();
+    _paintTransform.dispose();
     super.dispose();
   }
 
@@ -58,7 +95,10 @@ class _FloorViewState extends State<FloorView> {
   Widget build(BuildContext context) {
     final german = Localizations.localeOf(context).languageCode == 'de';
     return LayoutBuilder(builder: (context, constraints) {
+      _viewport = constraints.biggest;
+      _pixelRatio = MediaQuery.devicePixelRatioOf(context);
       _positionTarget(constraints.biggest);
+      _scheduleResolution();
       return Stack(children: [
         Positioned.fill(
             child: ClipRect(
@@ -72,7 +112,7 @@ class _FloorViewState extends State<FloorView> {
                   painter: MapPainter(
                       roomResult: widget.data,
                       context: context,
-                      transformation: _transform),
+                      transformation: _paintTransform),
                   size: constraints.biggest)),
         ))),
         Positioned(

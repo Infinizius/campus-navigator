@@ -121,8 +121,9 @@ class MapPainter extends CustomPainter {
     canvas.translate(-drawingArea.left, -drawingArea.top);
 
     for (final entry in roomResult.rooms.entries) {
-      if (entry.key == 'highlightedRoom' || entry.key == 'hightlightedRoom')
+      if (entry.key == 'highlightedRoom' || entry.key == 'hightlightedRoom') {
         continue;
+      }
       final filter = layerFilterOptions.values
           .where((f) => f.layerName == entry.key)
           .firstOrNull;
@@ -139,7 +140,7 @@ class MapPainter extends CustomPainter {
         [];
     for (final room in selected) {
       _drawRoom(canvas, room,
-          dark ? const Color(0x50ff8b6d) : const Color(0x40ed7659));
+          dark ? const Color(0x30ff8b6d) : const Color(0x40ed7659));
     }
 
     final images = roomResult.backgroundImageData;
@@ -200,8 +201,9 @@ class MapPainter extends CustomPainter {
                   dark ? const Color(0xffffb4a0) : const Color(0xff922c18));
       }
     }
-    if (filters.contains(layerFilterOptions.Labeling))
+    if (filters.contains(layerFilterOptions.Labeling)) {
       _drawLabels(canvas, dark, screenScale);
+    }
     canvas.restore();
   }
 
@@ -313,12 +315,12 @@ class MapPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(MapPainter old) =>
-      !identical(roomResult, old.roomResult) ||
-      brightness != old.brightness ||
-      labelColor != old.labelColor ||
-      transformation != old.transformation ||
-      !setEquals(filters, old.filters);
+  bool shouldRepaint(MapPainter oldDelegate) =>
+      !identical(roomResult, oldDelegate.roomResult) ||
+      brightness != oldDelegate.brightness ||
+      labelColor != oldDelegate.labelColor ||
+      transformation != oldDelegate.transformation ||
+      !setEquals(filters, oldDelegate.filters);
 
   Rect calculateDrawingArea() => drawingArea;
 }
@@ -327,8 +329,9 @@ Rect planBounds(BuildingPageData data) {
   // Include the complete tile canvas, including lines outside room polygons.
   final w = data.numberVariables['data_canv_width'] ?? 0;
   final h = data.numberVariables['data_canv_height'] ?? 0;
-  if (w > 0 && h > 0)
+  if (w > 0 && h > 0) {
     return Rect.fromCenter(center: Offset.zero, width: w, height: h);
+  }
   final points =
       data.getFlatRoomList().expand((r) => r.points).expand(mapPoints).toList();
   if (points.isEmpty) return const Rect.fromLTWH(0, 0, 1, 1);

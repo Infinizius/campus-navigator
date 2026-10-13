@@ -185,7 +185,7 @@ class BuildingPageData {
     // Start loading process for images
     roomResult.backgroundImageData = PageImageData.fetchLevelImages(
         roomResult.pngFileName, roomResult.layers, roomResult.subpics,
-        qualiIndex: (qualityLevel - 1));
+        qualiIndex: (qualityLevel - 1), adaptive: true);
 
     return roomResult;
   }
