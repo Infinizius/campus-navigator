@@ -43,6 +43,10 @@ enum AppLanguage {
       final candidate = language.locale;
       if (candidate.languageCode != locale.languageCode) continue;
       if (candidate.scriptCode == locale.scriptCode) return language;
+      // A script subtag on a region-specific device locale (for example
+      // de-Latn-DE) does not need a separate catalog when the supported
+      // language itself uses the default script.
+      if (candidate.scriptCode == null) return language;
       // A device may report only `zh`; the one supported Chinese catalog is
       // simplified Chinese, so resolve that locale to zh-Hans.
       if (locale.languageCode == 'zh' &&

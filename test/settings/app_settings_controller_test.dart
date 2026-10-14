@@ -238,5 +238,32 @@ void main() {
       expect(AppLanguage.all.map((language) => language.nativeName).toSet(),
           hasLength(14));
     });
+
+    test('resolves supported languages with explicit default scripts', () {
+      expect(
+        AppSettingsController.resolveLocale(const Locale.fromSubtags(
+          languageCode: 'de',
+          scriptCode: 'Latn',
+          countryCode: 'DE',
+        )),
+        const Locale('de'),
+      );
+      expect(
+        AppSettingsController.resolveLocale(const Locale.fromSubtags(
+          languageCode: 'ar',
+          scriptCode: 'Arab',
+          countryCode: 'SA',
+        )),
+        const Locale('ar'),
+      );
+      expect(
+        AppSettingsController.resolveLocale(const Locale.fromSubtags(
+          languageCode: 'zh',
+          scriptCode: 'Hant',
+          countryCode: 'TW',
+        )),
+        AppSettingsController.fallbackLocale,
+      );
+    });
   });
 }
