@@ -4,16 +4,17 @@
 
 [Deutsch](#deutsch) · [English](#english) · [Campus Navigator öffnen](https://navigator.tu-dresden.de/)
 
-Campus Navigator ist eine Flutter-App für die mobile Nutzung des TU-Campusnavigators. Sie verbindet Raum- und Gebäudesuche mit interaktiven Etagenplänen und einer Campuskarte.
+Campus Navigator ist eine Flutter-App für die mobile Nutzung des TU-Campusnavigators. Sie verbindet Raum- und Gebäudesuche mit interaktiven Etagenplänen, einer Campuskarte, erweiterten Raumdetails und einem importierbaren Stundenplan.
 
 ## Deutsch
 
 ### Einblicke
 
 <p align="center">
-  <a href="docs/release-candidate-evidence/phone-home.png"><img src="docs/release-candidate-evidence/phone-home.png" alt="Startansicht mit Raumsuche, Favoriten und Verlauf" width="32%" /></a>
-  <a href="docs/release-candidate-evidence/phone-map-apb.png"><img src="docs/release-candidate-evidence/phone-map-apb.png" alt="Campuskarte mit ausgewähltem Gebäude und Aktionen" width="32%" /></a>
-  <a href="docs/release-candidate-evidence/phone-room-detail.png"><img src="docs/release-candidate-evidence/phone-room-detail.png" alt="Etagenplan mit ausgewähltem Raum" width="32%" /></a>
+  <a href="docs/release-candidate-evidence/android14-home.png"><img src="docs/release-candidate-evidence/android14-home.png" alt="Startansicht mit Raumsuche, Favoriten und Verlauf" width="24%" /></a>
+  <a href="docs/release-candidate-evidence/android14-campus-map.png"><img src="docs/release-candidate-evidence/android14-campus-map.png" alt="Campuskarte mit Gebäudesuche" width="24%" /></a>
+  <a href="docs/release-candidate-evidence/android14-room-details.png"><img src="docs/release-candidate-evidence/android14-room-details.png" alt="Etagenplan und zusätzliche Informationen zu APB E069" width="24%" /></a>
+  <a href="docs/release-candidate-evidence/android14-timetable-upcoming.png"><img src="docs/release-candidate-evidence/android14-timetable-upcoming.png" alt="Wiederkehrende ICS-Termine im Stundenplan" width="24%" /></a>
 </p>
 
 ### Funktionen
@@ -23,8 +24,10 @@ Campus Navigator ist eine Flutter-App für die mobile Nutzung des TU-Campusnavig
 - **Campuskarte:** Gebäude auf der OpenStreetMap-Karte suchen und auswählen, Karte verschieben und zoomen sowie zwischen hellem und dunklem Kartenstil wechseln.
 - **Etagenpläne:** verfügbare Stockwerke ansehen, den Plan verschieben und vergrößern und Räume oder Ausstattung hervorheben.
 - **Gebäudeinformationen:** Adressen ansehen und in einer Karten-App öffnen.
+- **Raumdetails:** zusätzliche Angaben wie Sitzplatzzahl und verbundene Raumzugänge anzeigen.
 - **Fußgängernavigation:** eine Route in Google Maps zum Gebäudepunkt starten. Der Punkt ist kein bestätigter Gebäudeeingang.
 - **Raumbelegungspläne:** Belegungsinformationen mit Universitätszugang laden.
+- **Stundenplan:** ICS-Dateien mit wiederkehrenden Terminen importieren, die nächste Veranstaltung anzeigen und bekannte Räume direkt öffnen.
 - **Freiraumsuche:** verfügbar, in der App derzeit noch als WIP gekennzeichnet.
 - **Einstellungen:** App- und Kartenfarbmodus, Sprache, Cache-Dauer, Vorladen von Suchtreffern, Planqualität und gespeicherte Zugangsdaten verwalten.
 - **Zwischenspeicher:** zuvor geladene Karten- und Gebäudedaten können bei erneuten Aufrufen helfen. Die App bietet keinen vollständigen Offlinekartenmodus.
@@ -63,14 +66,15 @@ Campus Navigator soll die häufigsten Campus-Aufgaben auf dem Smartphone vereinf
 
 **Find rooms and get around the TU Dresden campus.**
 
-Campus Navigator is a Flutter app for using the TU Dresden campus navigator on mobile. It brings room and building search together with interactive floor plans and a campus map.
+Campus Navigator is a Flutter app for using the TU Dresden campus navigator on mobile. It brings room and building search together with interactive floor plans, a campus map, expanded room details, and an importable timetable.
 
 ### Screenshots
 
 <p align="center">
-  <a href="docs/release-candidate-evidence/phone-home.png"><img src="docs/release-candidate-evidence/phone-home.png" alt="Home screen with room search, favorites and history" width="32%" /></a>
-  <a href="docs/release-candidate-evidence/phone-map-apb.png"><img src="docs/release-candidate-evidence/phone-map-apb.png" alt="Campus map with a selected building and actions" width="32%" /></a>
-  <a href="docs/release-candidate-evidence/phone-room-detail.png"><img src="docs/release-candidate-evidence/phone-room-detail.png" alt="Floor plan with a selected room" width="32%" /></a>
+  <a href="docs/release-candidate-evidence/android14-home.png"><img src="docs/release-candidate-evidence/android14-home.png" alt="Home screen with room search, favorites and history" width="24%" /></a>
+  <a href="docs/release-candidate-evidence/android14-campus-map.png"><img src="docs/release-candidate-evidence/android14-campus-map.png" alt="Campus map with building search" width="24%" /></a>
+  <a href="docs/release-candidate-evidence/android14-room-details.png"><img src="docs/release-candidate-evidence/android14-room-details.png" alt="Floor plan and expanded APB E069 details" width="24%" /></a>
+  <a href="docs/release-candidate-evidence/android14-timetable-upcoming.png"><img src="docs/release-candidate-evidence/android14-timetable-upcoming.png" alt="Recurring ICS events in the timetable" width="24%" /></a>
 </p>
 
 ### Features
@@ -80,8 +84,10 @@ Campus Navigator is a Flutter app for using the TU Dresden campus navigator on m
 - **Campus map:** find and select buildings on an OpenStreetMap basemap, pan and zoom, and switch between light and dark map styles.
 - **Floor plans:** browse available floors, pan and zoom plans, and highlight rooms or facilities.
 - **Building details:** view addresses and open them in a map app.
+- **Room details:** view additional information such as seating capacity and connected room entrances.
 - **Walking directions:** open Google Maps with the building map point as the destination. This point is not a verified building entrance.
 - **Room occupancy plans:** load occupancy information with university credentials.
+- **Timetable:** import ICS files with recurring events, see the next class, and open recognized rooms directly.
 - **Free-room search:** available, but still marked WIP in the app.
 - **Settings:** manage app and map themes, language, cache duration, search-result prefetching, plan quality, and saved credentials.
 - **Cached data:** previously loaded map and building data can help on later visits. The app does not provide a full offline map mode.
