@@ -34,7 +34,7 @@ class _DraggableBottomSheetState extends State<DraggableBottomSheet> {
   Widget build(BuildContext context) =>
       LayoutBuilder(builder: (context, constraints) {
         final headerHeight = DraggableBottomSheet.headerHeight(context);
-        _collapsed = (headerHeight / constraints.maxHeight).clamp(0.08, 0.85);
+        _collapsed = (headerHeight / constraints.maxHeight).clamp(0.0, 0.85);
         return DraggableScrollableSheet(
           initialChildSize: _collapsed,
           minChildSize: _collapsed,
@@ -52,34 +52,40 @@ class _DraggableBottomSheetState extends State<DraggableBottomSheet> {
             clipBehavior: Clip.antiAlias,
             child: CustomScrollView(controller: scrollController, slivers: [
               SliverToBoxAdapter(
-                  child: Semantics(
-                      button: true,
-                      label: AppLocalizations.of(context)!.roomInformation,
-                      child: InkWell(
-                        onTap: _toggle,
-                        child: SizedBox(
-                            height: headerHeight,
-                            child: Column(children: [
-                              const Grabber(),
-                              Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16),
-                                  child: Row(children: [
-                                    if (widget.leading != null) ...[
-                                      widget.leading!,
-                                      const SizedBox(width: 12)
-                                    ],
-                                    Expanded(
-                                        child: Text(widget.name,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .titleSmall)),
-                                    const Icon(Icons.unfold_more, size: 20)
-                                  ])),
-                            ])),
-                      ))),
+                  child: AnimatedBuilder(
+                      animation: _controller,
+                      builder: (context, _) => Semantics(
+                          button: true,
+                          label: _controller.isAttached &&
+                                  _controller.size > _collapsed + .03
+                              ? AppLocalizations.of(context)!
+                                  .roomDetailsCollapse
+                              : AppLocalizations.of(context)!.roomDetailsExpand,
+                          child: InkWell(
+                            onTap: _toggle,
+                            child: SizedBox(
+                                height: headerHeight,
+                                child: Column(children: [
+                                  const Grabber(),
+                                  Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 16),
+                                      child: Row(children: [
+                                        if (widget.leading != null) ...[
+                                          widget.leading!,
+                                          const SizedBox(width: 12)
+                                        ],
+                                        Expanded(
+                                            child: Text(widget.name,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .titleSmall)),
+                                        const Icon(Icons.unfold_more, size: 20)
+                                      ])),
+                                ])),
+                          )))),
               SliverToBoxAdapter(
                   child: Padding(
                       padding: const EdgeInsets.fromLTRB(8, 0, 8, 16),

@@ -77,3 +77,19 @@ Analyze 36 Legacy-Infos ohne Warnung/Fehler; Produkt-APK gebaut. Native
 Produktprüfung läuft. Kommunikation an Settings-Chat von Auto-Review abgelehnt;
 explizite Nutzerfreigabe angefragt, keine Umgehung. Owner liefert unabhängig
 weitere Patches und hat den Emulator zur Nutzung freigegeben.
+
+Review: fresh-context product_review, d5609b0..1ebb0fd, 3 Important/2 Minor,
+keine Critical. Wochentitel aus festem 3-Element-Array entfernt; tatsächliche
+Serverüberschriften nur bei eindeutiger Tabellenzuordnung erhalten. Vier
+Tabellen rot reproduziert, grün. Tablet-Sheet 93,76 statt 64 dp rot,
+Prozent-Untergrenze entfernt, grün. Map-Werkzeuge in kompletter Home-Navigation
+Querformat rot (Zoom-Button außerhalb Map); kurze Kartenfläche nutzt horizontale
+48-dp-Werkzeuge, grün. B-Kartencodes nun semantisch angesagt; Sheet benennt
+Ein-/Ausklappen. Keine Änderung von API/Parsern zur Behebung dieser UI-Befunde.
+Ruling: leere native Accessibility-Bäume/Activity-Neustarts nach DPI-Änderung
+nicht als geprüfte Screenshots akzeptieren — Automation verwirft ungültige
+Zustände und öffnet reale Produktansichten nach Größenwechsel neu.
+Review declined: authentifizierte Belegung, echtes Standortsignal/externe
+Navigation, private Fixtures und muttersprachliche Übersetzung brauchen
+Umgebungsdaten; vorhandene Kalender-/Adress-/Kameraverhalten bewusst erhalten.
+Explizite Script-Locales wurden dem Settings-Owner gemeldet; dessen Fix folgt.

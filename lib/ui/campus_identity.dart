@@ -74,30 +74,33 @@ class CampusIdentity {
 /// Non-interactive wayfinding label. Codes keep their reading order in RTL.
 class BuildingCodeBadge extends StatelessWidget {
   final String code;
-  const BuildingCodeBadge(this.code, {super.key});
+  final bool announceCode;
+  const BuildingCodeBadge(this.code, {super.key, this.announceCode = false});
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
-    return ExcludeSemantics(
+    return Semantics(
+        label: announceCode ? code.toUpperCase() : null,
+        excludeSemantics: true,
         child: Directionality(
-      textDirection: TextDirection.ltr,
-      child: Container(
-        width: 48 * scale,
-        height: scale <= 1.7 ? 40 : 16 + 14 * scale,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-            color: colors.primaryContainer,
-            borderRadius: BorderRadius.circular(4)),
-        child: Text(code.toUpperCase(),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: colors.onPrimaryContainer)),
-      ),
-    ));
+          textDirection: TextDirection.ltr,
+          child: Container(
+            width: 48 * scale,
+            height: scale <= 1.7 ? 40 : 16 + 14 * scale,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+                color: colors.primaryContainer,
+                borderRadius: BorderRadius.circular(4)),
+            child: Text(code.toUpperCase(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: colors.onPrimaryContainer)),
+          ),
+        ));
   }
 }
 

@@ -2,12 +2,10 @@ import 'package:campus_navigator/ui/styling.dart';
 import 'package:campus_navigator/api/building/roomOccupancyPlan.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 Widget occupancyTableView(
     List<List<List<String>>>? roomPlan, bool showOccupancyTable,
     {BuildContext? context}) {
-  final l = context == null ? null : AppLocalizations.of(context);
   final colors = context == null ? null : Theme.of(context).colorScheme;
   var basicStyle = const TextStyle(fontSize: 12);
   var boldStyle = const TextStyle(fontSize: 12, fontWeight: FontWeight.bold);
@@ -77,13 +75,12 @@ Widget occupancyTableView(
       children: tableRows,
     );
     if (tableRows.isNotEmpty) {
-      allTables.add(Text(l == null
-          ? RoomOccupancyPlan.tableNames[i]
-          : [
-              l.occupancyCurrentWeek,
-              l.occupancyNextWeek,
-              l.occupancyFollowingWeek
-            ][i]));
+      // Server headings can be dates/week numbers. Do not infer chronology.
+      // The legacy parser may drop empty tables but keep their heading;
+      // in that case omit ambiguous headings rather than attach a wrong week.
+      if (RoomOccupancyPlan.tableNames.length == roomPlan.length) {
+        allTables.add(Text(RoomOccupancyPlan.tableNames[i]));
+      }
       allTables.add(fullTable);
       allTables.add(const SizedBox(
         height: 10,

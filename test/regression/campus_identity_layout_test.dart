@@ -11,6 +11,13 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'saved_places_test.dart' show MemoryPlaces, room;
 import '../support/floor_fixture.dart';
+import 'package:campus_navigator/ui/components/occupancyTableView.dart';
+import 'package:campus_navigator/api/building/roomOccupancyPlan.dart';
+import 'package:campus_navigator/ui/components/bottom_sheet_view.dart';
+import 'campus_map_widget_test.dart'
+    show fixtureCatalog, TestCampusTiles, choose;
+import 'package:campus_navigator/ui/screens/home_screen.dart';
+import 'package:flutter_map/flutter_map.dart';
 
 Widget layoutApp(Widget home, {double scale = 1}) => MaterialApp(
     locale: const Locale('de'),
@@ -24,6 +31,78 @@ Widget layoutApp(Widget home, {double scale = 1}) => MaterialApp(
     home: home);
 
 void main() {
+  testWidgets('selected building keeps all map tools inside a rotated phone',
+      (tester) async {
+    tester.view.physicalSize = const Size(852, 393);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final catalog = fixtureCatalog();
+    final places = MemoryPlaces().create();
+    final search = RoomSearchController(prefetch: false);
+    await tester.pumpWidget(layoutApp(HomeScreen(
+        catalog: catalog,
+        tiles: TestCampusTiles(),
+        places: places,
+        search: search)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Campuskarte'));
+    await tester.pumpAndSettle();
+    await choose(tester, 'APB');
+    final map = tester.getRect(find.byType(FlutterMap));
+    final l = AppLocalizations.of(
+        tester.element(find.byKey(const ValueKey('campus-search'))))!;
+    for (final label in [
+      l.mapShowCampus,
+      l.mapLocate,
+      l.mapZoomIn,
+      l.mapZoomOut
+    ]) {
+      final button = find.byTooltip(label);
+      expect(button, findsOneWidget);
+      expect(tester.getRect(button).bottom, lessThanOrEqualTo(map.bottom));
+    }
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+    catalog.dispose();
+    places.dispose();
+    search.dispose();
+  });
+  testWidgets('portrait tablet collapsed sheet reserves exactly its header',
+      (tester) async {
+    tester.view.physicalSize = const Size(800, 1280);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(layoutApp(BuildingScreen(
+        room: Future.value(syntheticFloor()), name: 'TEST 318')));
+    await tester.pumpAndSettle();
+    final sheet = tester.widget<DraggableScrollableSheet>(
+        find.byType(DraggableScrollableSheet));
+    final region = tester.getSize(find.byType(DraggableBottomSheet)).height;
+    expect(sheet.controller!.size * region, closeTo(64, 1));
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('occupancy preserves server headings and accepts four tables',
+      (tester) async {
+    final original = List<String>.of(RoomOccupancyPlan.tableNames);
+    addTearDown(() => RoomOccupancyPlan.tableNames = original);
+    RoomOccupancyPlan.tableNames = ['KW 43', 'KW 44', 'KW 45', 'KW 46'];
+    final tables = List.generate(
+        4,
+        (_) => [
+              ['Time', 'Mo'],
+              ['09:00', 'Lecture']
+            ]);
+    await tester.pumpWidget(layoutApp(Builder(
+        builder: (context) =>
+            occupancyTableView(tables, true, context: context))));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.text('KW 46'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
   testWidgets(
       'redundant server room path stays available without repeating in the row',
       (tester) async {

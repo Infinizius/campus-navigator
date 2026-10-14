@@ -293,7 +293,7 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
                   children: [
                     Row(children: [
                       if (CampusIdentity.wayfinding(context))
-                        BuildingCodeBadge(b.code)
+                        BuildingCodeBadge(b.code, announceCode: true)
                       else
                         Text(b.code,
                             style: Theme.of(context)
@@ -349,159 +349,174 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
                   ]))));
 
   Widget _mapView(BuildContext context, bool dark, {bool tools = true}) =>
-      Stack(children: [
-        Positioned.fill(
-            child: RepaintBoundary(
-                child: FlutterMap(
-                    mapController: _map,
-                    options: MapOptions(
-                        initialCenter: campusCenter,
-                        initialZoom: 16,
-                        minZoom: 5,
-                        maxZoom: 20,
-                        backgroundColor: dark
-                            ? const Color(0xff20282d)
-                            : const Color(0xffe8eeeb),
-                        interactionOptions: const InteractionOptions(
-                            flags:
-                                InteractiveFlag.all & ~InteractiveFlag.rotate),
-                        onMapReady: () => _mapReady = true,
-                        onPositionChanged: (camera, _) {
-                          final bucket = camera.zoom.floor();
-                          if (bucket != _zoomBucket) {
-                            setState(() => _zoomBucket = bucket);
-                          }
-                        },
-                        onTap: (_, point) {
-                          final hit = _hits.value;
-                          // Hit values belong to this pointer event; never choose a nearest
-                          // building when the user actually touched empty ground.
-                          if (hit != null && hit.hitValues.isNotEmpty) {
-                            _select(hit.hitValues.first);
-                          } else {
-                            _searchFocus.unfocus();
-                            setState(() => _selected = null);
-                          }
-                        }),
-                    children: [
-              TileLayer(
-                  key: ValueKey(_tileRevision),
-                  urlTemplate: campusTileUrl,
-                  tileProvider: _tiles,
-                  userAgentPackageName: 'com.example.campus_navigator',
-                  panBuffer: 0,
-                  keepBuffer: 2,
-                  maxNativeZoom: 19,
-                  retinaMode: MediaQuery.devicePixelRatioOf(context) > 1,
-                  tileBuilder: dark
-                      ? (context, image, tile) => ColorFiltered(
-                          // One OSM source, a local night style; no extra tile requests.
-                          colorFilter: const ColorFilter.matrix([
-                            -.25,
-                            -.40,
-                            -.10,
-                            0,
-                            240,
-                            -.23,
-                            -.38,
-                            -.09,
-                            0,
-                            245,
-                            -.21,
-                            -.35,
-                            -.09,
-                            0,
-                            250,
-                            0,
-                            0,
-                            0,
-                            1,
-                            0,
-                          ]),
-                          child: image)
-                      : null),
-              PolygonLayer<CampusFeature>(
-                  polygons: _buildingPolygons(dark),
-                  hitNotifier: _hits,
-                  polygonCulling: true,
-                  simplificationTolerance: 0,
-                  drawLabelsLast: true),
-              if (_position != null)
-                MarkerLayer(markers: [
-                  Marker(
-                      point: _position!,
-                      width: 28,
-                      height: 28,
-                      child: Tooltip(
-                          message: _l.mapLastPosition,
-                          child: Container(
-                              decoration: BoxDecoration(
-                                  color: const Color(0xff1769d2),
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                      color: Colors.white, width: 3)),
-                              child: const Icon(Icons.circle,
-                                  size: 10, color: Colors.white))))
-                ]),
-            ]))),
-        if (tools)
-          Positioned(
-              right: 12,
-              top: 12,
-              child: Column(children: [
-                _mapButton(context, _l.mapShowCampus, Icons.school_outlined,
-                    () => _map.move(campusCenter, 16)),
-                const SizedBox(height: 8),
-                _mapButton(
-                    context,
-                    _l.mapLocate,
-                    _locating ? Icons.hourglass_top : Icons.my_location,
-                    _locating ? null : _locate),
-                const SizedBox(height: 8),
-                _mapButton(
-                    context,
-                    _l.mapZoomIn,
-                    Icons.add,
-                    () => _map.move(_map.camera.center,
-                        (_map.camera.zoom + 1).clamp(5, 20))),
-                _mapButton(
-                    context,
-                    _l.mapZoomOut,
-                    Icons.remove,
-                    () => _map.move(_map.camera.center,
-                        (_map.camera.zoom - 1).clamp(5, 20))),
-              ])),
-        Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Material(
-                color: Theme.of(context).colorScheme.surface,
-                child: Wrap(
-                    alignment: WrapAlignment.center,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      InkWell(
-                          onTap: () => launchUrl(
-                              Uri.parse(
-                                  'https://www.openstreetmap.org/copyright'),
-                              mode: LaunchMode.externalApplication),
-                          child: const Padding(
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 8),
-                              child: Text('© OpenStreetMap contributors',
-                                  style: TextStyle(fontSize: 11)))),
-                      InkWell(
-                          onTap: () => launchUrl(
-                              Uri.parse('https://navigator.tu-dresden.de/'),
-                              mode: LaunchMode.externalApplication),
-                          child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 8),
-                              child: Text(_l.mapBuildingsSource,
-                                  style: const TextStyle(fontSize: 11)))),
+      LayoutBuilder(
+          builder: (context, bounds) => Stack(children: [
+                Positioned.fill(
+                    child: RepaintBoundary(
+                        child: FlutterMap(
+                            mapController: _map,
+                            options: MapOptions(
+                                initialCenter: campusCenter,
+                                initialZoom: 16,
+                                minZoom: 5,
+                                maxZoom: 20,
+                                backgroundColor: dark
+                                    ? const Color(0xff20282d)
+                                    : const Color(0xffe8eeeb),
+                                interactionOptions: const InteractionOptions(
+                                    flags: InteractiveFlag.all &
+                                        ~InteractiveFlag.rotate),
+                                onMapReady: () => _mapReady = true,
+                                onPositionChanged: (camera, _) {
+                                  final bucket = camera.zoom.floor();
+                                  if (bucket != _zoomBucket) {
+                                    setState(() => _zoomBucket = bucket);
+                                  }
+                                },
+                                onTap: (_, point) {
+                                  final hit = _hits.value;
+                                  // Hit values belong to this pointer event; never choose a nearest
+                                  // building when the user actually touched empty ground.
+                                  if (hit != null && hit.hitValues.isNotEmpty) {
+                                    _select(hit.hitValues.first);
+                                  } else {
+                                    _searchFocus.unfocus();
+                                    setState(() => _selected = null);
+                                  }
+                                }),
+                            children: [
+                      TileLayer(
+                          key: ValueKey(_tileRevision),
+                          urlTemplate: campusTileUrl,
+                          tileProvider: _tiles,
+                          userAgentPackageName: 'com.example.campus_navigator',
+                          panBuffer: 0,
+                          keepBuffer: 2,
+                          maxNativeZoom: 19,
+                          retinaMode:
+                              MediaQuery.devicePixelRatioOf(context) > 1,
+                          tileBuilder: dark
+                              ? (context, image, tile) => ColorFiltered(
+                                  // One OSM source, a local night style; no extra tile requests.
+                                  colorFilter: const ColorFilter.matrix([
+                                    -.25,
+                                    -.40,
+                                    -.10,
+                                    0,
+                                    240,
+                                    -.23,
+                                    -.38,
+                                    -.09,
+                                    0,
+                                    245,
+                                    -.21,
+                                    -.35,
+                                    -.09,
+                                    0,
+                                    250,
+                                    0,
+                                    0,
+                                    0,
+                                    1,
+                                    0,
+                                  ]),
+                                  child: image)
+                              : null),
+                      PolygonLayer<CampusFeature>(
+                          polygons: _buildingPolygons(dark),
+                          hitNotifier: _hits,
+                          polygonCulling: true,
+                          simplificationTolerance: 0,
+                          drawLabelsLast: true),
+                      if (_position != null)
+                        MarkerLayer(markers: [
+                          Marker(
+                              point: _position!,
+                              width: 28,
+                              height: 28,
+                              child: Tooltip(
+                                  message: _l.mapLastPosition,
+                                  child: Container(
+                                      decoration: BoxDecoration(
+                                          color: const Color(0xff1769d2),
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                              color: Colors.white, width: 3)),
+                                      child: const Icon(Icons.circle,
+                                          size: 10, color: Colors.white))))
+                        ]),
                     ]))),
-      ]);
+                if (tools)
+                  Positioned(
+                      right: 12,
+                      top: 12,
+                      child: Flex(
+                          mainAxisSize: MainAxisSize.min,
+                          direction: bounds.maxHeight < 260
+                              ? Axis.horizontal
+                              : Axis.vertical,
+                          children: [
+                            _mapButton(
+                                context,
+                                _l.mapShowCampus,
+                                Icons.school_outlined,
+                                () => _map.move(campusCenter, 16)),
+                            const SizedBox(height: 8, width: 8),
+                            _mapButton(
+                                context,
+                                _l.mapLocate,
+                                _locating
+                                    ? Icons.hourglass_top
+                                    : Icons.my_location,
+                                _locating ? null : _locate),
+                            const SizedBox(height: 8, width: 8),
+                            _mapButton(
+                                context,
+                                _l.mapZoomIn,
+                                Icons.add,
+                                () => _map.move(_map.camera.center,
+                                    (_map.camera.zoom + 1).clamp(5, 20))),
+                            _mapButton(
+                                context,
+                                _l.mapZoomOut,
+                                Icons.remove,
+                                () => _map.move(_map.camera.center,
+                                    (_map.camera.zoom - 1).clamp(5, 20))),
+                          ])),
+                Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: Material(
+                        color: Theme.of(context).colorScheme.surface,
+                        child: Wrap(
+                            alignment: WrapAlignment.center,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              InkWell(
+                                  onTap: () => launchUrl(
+                                      Uri.parse(
+                                          'https://www.openstreetmap.org/copyright'),
+                                      mode: LaunchMode.externalApplication),
+                                  child: const Padding(
+                                      padding: EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 8),
+                                      child: Text(
+                                          '© OpenStreetMap contributors',
+                                          style: TextStyle(fontSize: 11)))),
+                              InkWell(
+                                  onTap: () => launchUrl(
+                                      Uri.parse(
+                                          'https://navigator.tu-dresden.de/'),
+                                      mode: LaunchMode.externalApplication),
+                                  child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 8),
+                                      child: Text(_l.mapBuildingsSource,
+                                          style:
+                                              const TextStyle(fontSize: 11)))),
+                            ]))),
+              ]));
 
   Widget _mapButton(BuildContext context, String label, IconData icon,
           VoidCallback? action) =>
@@ -599,7 +614,8 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
                                       key: ValueKey('campus-result-${b.code}'),
                                       leading:
                                           CampusIdentity.wayfinding(context)
-                                              ? BuildingCodeBadge(b.code)
+                                              ? BuildingCodeBadge(b.code,
+                                                  announceCode: true)
                                               : Text(b.code,
                                                   style: Theme.of(context)
                                                       .textTheme
