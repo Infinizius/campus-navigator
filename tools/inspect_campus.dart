@@ -1,7 +1,7 @@
 // Inspect a single saved, raw ISO-8859-1 TU API response without network access.
 import 'dart:convert';
 import 'dart:io';
-import '../lib/api/campus/campus_building.dart';
+import 'package:campus_navigator/api/campus/campus_building.dart';
 
 void main(List<String> args) {
   if (args.length != 1) {

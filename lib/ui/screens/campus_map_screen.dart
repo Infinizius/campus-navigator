@@ -114,16 +114,17 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
     });
   }
 
-  void _focusAfterLayout(BuildContext context) {
+  void _focusAfterLayout(bool keyboardOpen) {
     final building = _pendingFocus;
-    if (building == null ||
-        !_mapReady ||
-        MediaQuery.viewInsetsOf(context).bottom > 0) return;
+    if (building == null || !_mapReady || keyboardOpen) {
+      return;
+    }
     _pendingFocus = null;
     if (building.mapPoint == null) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !widget.active || _selected?.code != building.code)
+      if (!mounted || !widget.active || _selected?.code != building.code) {
         return;
+      }
       _map.fitCamera(CameraFit.bounds(
           bounds: LatLngBounds.fromPoints(
               building.outlines.expand((r) => r).toList()),
@@ -511,6 +512,8 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
               IconButton(tooltip: label, onPressed: action, icon: Icon(icon)));
 
   Widget _content(BuildContext context, bool dark) {
+    // Read above this Scaffold: its resized body removes the keyboard inset.
+    final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
     final matches = _query.isEmpty
         ? <CampusFeature>[]
         : _catalog.buildings
@@ -613,14 +616,13 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
                           _retryTiles)
                       : const SizedBox()),
               Expanded(child: LayoutBuilder(builder: (context, bounds) {
-                _focusAfterLayout(context);
+                _focusAfterLayout(keyboardOpen);
                 final wide = bounds.maxWidth >= 840;
                 // During keyboard entry the map keeps the available height.
-                final details = _query.isEmpty &&
-                        _selected != null &&
-                        MediaQuery.viewInsetsOf(context).bottom == 0
-                    ? _details(context, _selected!, wide)
-                    : null;
+                final details =
+                    _query.isEmpty && _selected != null && !keyboardOpen
+                        ? _details(context, _selected!, wide)
+                        : null;
                 if (wide) {
                   return Row(
                       crossAxisAlignment: CrossAxisAlignment.stretch,

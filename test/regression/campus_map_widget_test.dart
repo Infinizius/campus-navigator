@@ -56,6 +56,15 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('campus-result-BAR')).hitTestable(),
         findsOneWidget);
+    final controller =
+        tester.widget<FlutterMap>(find.byType(FlutterMap)).mapController!;
+    final before = controller.camera.center;
+    await tester.tap(find.byKey(const ValueKey('campus-result-BAR')));
+    await tester.pumpAndSettle();
+    expect(controller.camera.center, before); // Wait for the keyboard to close.
+    tester.view.resetViewInsets();
+    await tester.pumpAndSettle();
+    expect(controller.camera.center.latitude, inExclusiveRange(51.026, 51.028));
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
     catalog.dispose();

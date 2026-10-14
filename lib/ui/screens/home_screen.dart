@@ -27,6 +27,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final de = Localizations.localeOf(context).languageCode == 'de';
     return Scaffold(
+        // Each tab owns its keyboard resizing; keep the actual inset available
+        // to the campus camera until the keyboard has finished closing.
+        resizeToAvoidBottomInset: false,
         body: IndexedStack(index: _index, children: [
           SearchScreen(places: widget.places, search: widget.search),
           if (_mapVisited)

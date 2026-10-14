@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:campus_navigator/api/campus/campus_building.dart';
 import 'package:campus_navigator/api/campus/campus_catalog.dart';
+import 'package:campus_navigator/api/place_navigation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 
@@ -107,6 +108,12 @@ void main() {
       final feature = CampusFeature.fromJson({...record, 'krz': code})!;
       expect(feature.code, code);
       expect(feature.floorCode, code.toLowerCase());
+      final floorCode = feature.floorCode;
+      expect(
+          buildingFloorQuery(
+              '<a href="/etplan/${Uri.encodeComponent(floorCode)}/00">Plan</a>',
+              floorCode),
+          '$floorCode/00');
     }
   });
 
