@@ -6,14 +6,14 @@
 
 **Architecture:** Parse ICS into versioned event-series models, expand bounded occurrences with `teno_rrule`, resolve only LOCATION through existing TU search, and persist one local snapshot. Integrate a third Home destination and independent next-event preview using existing Campus Identity and navigation APIs.
 
-**Tech Stack:** Flutter 3.24.5 / Dart 3.5.4, pinned `icalendar_parser` 2.1.0, `teno_rrule` 0.0.10, `timezone` 0.10.1, `file_picker` 8.1.4, Flutter secure storage, Flutter test.
+**Tech Stack:** Flutter 3.24.5 / Dart 3.5.4, pinned `icalendar_parser` 2.1.0, `teno_rrule` 0.0.8, `timezone` 0.10.1, `file_selector` 1.0.3, Flutter secure storage, Flutter test.
 
 **Spec:** `docs/superpowers/specs/2026-10-14-local-timetable-design.md`
 
 ## Global Constraints
 
 - Work only in the existing `campus-navigator` checkout on `feature/timetable`, based on `v1.3.0`; never modify `master` or sibling worktrees.
-- Raise the Dart lower bound to `>=3.5.0` for `teno_rrule` 0.0.10; retain the pinned Flutter 3.24.5 / Dart 3.5.4 toolchain.
+- Retain the app's Dart lower bound `>=3.0.0` and the pinned Flutter 3.24.5 / Dart 3.5.4 toolchain.
 - Never ask for calendar permission; never persist source ICS bytes or send SUMMARY/DESCRIPTION outside the device.
 - Send only LOCATION to room search; use canonical, validated `SavedPlace.identifier` for floor navigation.
 - Do not modify floor-plan rendering, room geometry, or room identity rules.
@@ -45,7 +45,7 @@
 - Preserve UID, summary, optional description/location, DTSTART/DTEND or DURATION, VALUE/TZID, one RRULE, all EXDATE values, and detached RECURRENCE-ID overrides.
 - Parse date-only, floating campus-local, UTC, and recognized IANA date-times. Initialize timezone data once. Validate embedded VTIMEZONE observances against the bundled zone for the event's DTSTART through the latest event/query horizon; reject custom or mismatched definitions.
 
-- [ ] **Step 1: Add exact dependencies `file_picker: 8.1.4`, `icalendar_parser: 2.1.0`, `teno_rrule: 0.0.10`, and `timezone: 0.10.1`, and raise the SDK floor to `>=3.5.0`. Run `flutter pub get` and confirm only the intended package/configuration files changed.**
+- [ ] **Step 1: Add exact dependencies `file_selector: 1.0.3`, `icalendar_parser: 2.1.0`, `teno_rrule: 0.0.8`, and `timezone: 0.10.1`, retaining the SDK floor at `>=3.0.0`. Run `flutter pub get` and confirm only the intended package/configuration files changed.**
 - [ ] **Step 2: Add parser characterization tests** named `parses_single_event_and_unescapes_text`, `parses_all_day_exclusive_end`, `parses_duration_event`, `preserves_tzid_and_recurrence_identity`, `combines_repeated_exdate_lines`, `rejects_duplicate_uid_and_incomplete_event`, `rejects_unknown_tzid`, `rejects_rdate_multiple_rrules_and_range`, and `rejects_mismatched_iana_vtimezone`; run them and confirm the expected missing parser behavior fails.
 
 Run: `. .\tools\dev-env.ps1; $env:DART_SUPPRESS_ANALYTICS='true'; flutter test test/timetable/ics_parser_test.dart --no-pub`
@@ -136,7 +136,7 @@ Expected: failing persistence assertions, with no test-harness errors.
 - `TimetableScreen({required TimetableStore store, CampusCatalog? catalog, Future<Uint8List?> Function()? pickIcsBytes, Future<BuildingPageData> Function(SavedPlace)? loadPlace, Future<bool> Function(Uri)? launchRoute, RoomResolver? resolver})` owns screen-only controllers and releases only dependencies it creates.
 - HomeScreen owns or receives one shared `CampusCatalog` for the map and timetable. Add a third lazy `IndexedStack` destination in both existing navigation controls, without resetting Search/Map state.
 - Floor actions use `loadSavedPlace` then `BuildingScreen`; walking uses only a matched building's `CampusFeature.routeUri` and existing external URL launcher.
-- File selection filters `.ics`, reads bytes, rejects >5 MiB, parses before asking Update/Replace, and commits only after complete validation. No calendar permission.
+- Use Flutter `file_selector` to filter `.ics`, read `XFile` bytes, reject >5 MiB, parse before asking Update/Replace, and commit only after complete validation. No calendar permission.
 
 - [ ] **Step 1: Write widget tests** named `home_has_timetable_destination_on_phone_and_rail`, `search_home_shows_next_event_preview`, `preview_hides_when_no_upcoming_event`, `today_and_week_views_show_sorted_events`, `import_uses_ics_picker_and_offers_update_or_replace`, `invalid_import_preserves_schedule`, `room_action_opens_verified_place`, `maps_action_uses_verified_building_uri`, `unresolved_room_offers_manual_assignment`, and `timetable_uses_light_and_dark_theme_tokens`.
 - [ ] **Step 2: Run both widget test files and confirm expected absent UI behavior.**
