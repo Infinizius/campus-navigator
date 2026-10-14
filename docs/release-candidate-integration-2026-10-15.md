@@ -37,7 +37,7 @@ Campus Identity, Einstellungen, Suche, Favoriten und Campuskarte waren bereits i
 - Raumdetails werden über die bestehende Raum-ID geladen, zeigen verfügbare Zusatzinformationen und verwenden für Favoriten dieselbe Speicherung wie die Raumsuche.
 - Unbekannte Räume bleiben erkennbar und können im Stundenplan manuell zugeordnet werden. API-/Netzwerkfehler und Cache-Fallbacks sind durch kontrollierte Tests abgedeckt.
 
-Verwendet wurden Flutter 3.24.5 und Dart 3.5.4.
+Verwendet wurden Flutter 3.24.5 und Dart 3.5.4. Die folgende Tabelle dokumentiert den ersten Integrationslauf vor der Versionsanhebung auf 1.4.0+6.
 
 | Prüfung | Ergebnis |
 |---|---|
@@ -51,9 +51,18 @@ Verwendet wurden Flutter 3.24.5 und Dart 3.5.4.
 
 Die Suite gibt außerdem die bestehende Meldung `Warning: No Tables in Room OccupancyTable` für ein leeres Belegungs-Fixture aus; sie verursacht keinen Testfehler.
 
+### Release-Reverifikation für 1.4.0+6
+
+- `flutter analyze --no-pub`: 0 Fehler, 0 Warnungen, 36 Info-Lints; Exit-Code 1, da Flutter Info-Lints als Findings zählt.
+- `flutter test --no-pub`: 243 bestanden, 26 übersprungen, 10 fehlgeschlagen. Die Fehlschläge betreffen das fehlende `shaders/ink_sparkle.frag` im Test-Asset-Bundle. Die Shaderdatei ist im APK enthalten; der Unterschied zum ersten Integrationslauf bleibt als Toolchain-/Testbefund dokumentiert.
+- `flutter build apk --debug --no-pub --build-name=1.4.0 --build-number=6`: erfolgreich.
+- Die APK wurde auf `emulator-5560` installiert und gestartet. Die Android-Metadaten bestätigen `versionName=1.4.0` und `versionCode=6`.
+
 ## Emulatorprüfungen
 
 Manuell geprüft wurde der installierte Debug-Build auf dem Android-14-/API-34-Emulator `emulator-5560` (1080 × 1920, 420 dpi).
+
+Der neu gebaute Version-1.4-Build wurde zusätzlich auf diesem Emulator installiert und gestartet. Die ausführlichen Nutzerabläufe unten wurden beim Integrationslauf mit demselben App-Code vor der reinen Versionsanhebung geprüft.
 
 - **Raumsuche:** `APB E069` geöffnet; Etage 00 und rote Raumhervorhebung geprüft. Zusatzinformationen geöffnet, Favorit gesetzt und nach App-Neustart wiedergefunden. Der Raum erschien auch im Verlauf.
 - **Campuskarte:** APB gesucht und ausgewählt; Adresse und Etagenplan-Aufruf geprüft. Google Maps wurde mit `51.02546115,13.72293115` und `travelmode=walking` gestartet. Die App kennzeichnet den Gebäudepunkt als nicht bestätigten Eingang.
@@ -74,11 +83,11 @@ Ein Tablet, Rotation, große Schrift, physisches Gerät und iOS wurden nicht man
 ## APK und Tag
 
 - APK: [`build/app/outputs/flutter-apk/app-debug.apk`](../build/app/outputs/flutter-apk/app-debug.apk)
-- Build-Version: `1.3.0+5`; Größe: 220.376.929 Bytes
-- SHA-256: `66CDD36E76EEABF1BADBB540E244E3B7361A9A5349CEB7C87CE302CA029D3A0B`
-- Die App-Dateien des APK entsprechen Code-Commit `e3be4ad`; spätere Commits in diesem Branch ändern ausschließlich Dokumentation.
-- `v0.1.0-rc1` existiert bereits und zeigt auf einen älteren Commit; der Tag wurde nicht verschoben. Für diese Feature-Erweiterung wird `v1.4.0-rc1` vorgeschlagen, aber erst nach Freigabe gesetzt.
+- Build-Version: `1.4.0+6`; Größe: 198.912.212 Bytes
+- SHA-256: `9A2AB9B2058B5223D9D7C5E1354582D38F84732DACF8D5B41F2488610B058F88`
+- Das APK enthält den App-Code des Integrationsstands; für diesen Build wurde die Android-Version auf `1.4.0+6` angehoben. Es ist ein Debug-/QA-Build, nicht produktionssigniert.
+- `v0.1.0-rc1` bleibt unverändert. `v1.4.0-rc1` kennzeichnet diese GitHub-Veröffentlichung als Vorabversion.
 
 ## Abschluss
 
-Der Kandidat ist auf `integration/release-candidate` committet. Es gab keinen Merge oder Push nach `master`/`main` und keinen Release-Tag. Vor einer Freigabe sollten private Etagenplan-Fixtures, Tablet/Rotation und der Performance-Benchmark geprüft werden.
+Der Kandidat ist auf `integration/release-candidate` committet und wird als GitHub-Vorabversion `v1.4.0-rc1` veröffentlicht. Es gibt keinen Merge oder Push nach `master`/`main`. Vor einer stabilen Freigabe sollten private Etagenplan-Fixtures, Tablet/Rotation und der Performance-Benchmark geprüft werden.
