@@ -18,9 +18,10 @@ class SavedPlace {
       required this.name,
       this.subName}) {
     final pattern = kind == PlaceKind.room
-        ? r'^[\w-]+/[\w-]+/raum/[\w.-]+$'
-        : r'^[\w-]+/geb/[\w-]+$';
-    if (!RegExp(pattern).hasMatch(identifier) || name.trim().isEmpty) {
+        ? r'^[\p{L}\p{N}_-]+/[\p{L}\p{N}_-]+/raum/[\p{L}\p{N}_.-]+$'
+        : r'^[\p{L}\p{N}_-]+/geb/[\p{L}\p{N}_-]+$';
+    if (!RegExp(pattern, unicode: true).hasMatch(identifier) ||
+        name.trim().isEmpty) {
       throw const FormatException('Invalid place');
     }
   }

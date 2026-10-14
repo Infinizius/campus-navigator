@@ -37,14 +37,51 @@ class SearchResult {
   }
 
   static Future<SearchResult> searchRoom(String query) async {
-    return _request({'query': query, 'from': '/', 'geocode': '1'});
+    final initial =
+        await _request({'query': query, 'from': '/', 'geocode': '1'});
+    if (initial.resultsBuildings.isNotEmpty ||
+        initial.resultsRooms.isNotEmpty ||
+        initial.moreBuildings ||
+        initial.moreRooms) {
+      return initial;
+    }
+
+    final alternate = _separateGluedBau(query);
+    if (alternate == null) return initial;
+    try {
+      final result =
+          await _request({'query': alternate, 'from': '/', 'geocode': '1'});
+      return result.resultsBuildings.isNotEmpty ||
+              result.resultsRooms.isNotEmpty
+          ? result
+          : initial;
+    } catch (_) {
+      // Keep the successful empty response if an optional spelling retry fails.
+      return initial;
+    }
   }
 
   /// Matches the TU Campus Navigator's "Erweiterte Suche" request. The
   /// suggestion endpoint may set more_raum/more_geb and expects a separate
   /// fullresults request to return the complete match list.
   static Future<SearchResult> searchAll(String query) async {
-    return _request({'query': query, 'fullresults': '1', 'roomtype': ''});
+    return _request({
+      'query': _separateGluedBau(query) ?? query,
+      'fullresults': '1',
+      'roomtype': ''
+    });
+  }
+
+  /// The TU search tokenizes the German compound suffix "Bau", but does not
+  /// find a glued form such as "Hülßebau". Retry only that specific empty
+  /// search case as "Hülße Bau"; preserve the user's other query text.
+  static String? _separateGluedBau(String query) {
+    final match = RegExp(r'^(.{2,}?)(bau)$', caseSensitive: false)
+        .firstMatch(query.trim());
+    if (match == null || RegExp(r'[-\s]$').hasMatch(match.group(1)!)) {
+      return null;
+    }
+    return '${match.group(1)} Bau';
   }
 
   static Future<SearchResult> _request(Map<String, String> map) async {

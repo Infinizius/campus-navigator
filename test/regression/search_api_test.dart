@@ -52,6 +52,42 @@ void main() {
     expect(result.resultsRooms.last.name, 'APB E068');
   });
 
+  test('glued German Bau compound retries with a searchable word boundary',
+      () async {
+    final api = APIServices.withoutCache();
+    final queries = <String>[];
+    api.client = MockClient((request) async {
+      final query = request.bodyFields['query']!;
+      queries.add(query);
+      if (query == 'Hülße Bau') {
+        return http.Response(
+            jsonEncode({
+              'results_geb': [
+                ['Hülße-Bau', 'dresden/geb/hül']
+              ],
+              'results_raum': [],
+              'more_geb': false,
+              'more_raum': false
+            }),
+            200);
+      }
+      return http.Response(
+          jsonEncode({
+            'results_geb': [],
+            'results_raum': [],
+            'more_geb': false,
+            'more_raum': false
+          }),
+          200);
+    });
+    APIServices.Shared = api;
+
+    final result = await SearchResult.searchRoom('Hülßebau');
+
+    expect(queries, ['Hülßebau', 'Hülße Bau']);
+    expect(result.resultsBuildings.single.identifier, 'dresden/geb/hül');
+  });
+
   test('server more flags and malformed rows are decoded independently', () {
     final result = SearchResult.fromJson({
       'assist': null,

@@ -36,6 +36,35 @@ Widget app(Widget home, {bool dark = false}) => MaterialApp(
 void main() {
   setUp(() => APIServices.Shared = APIServices.withoutCache());
 
+  testWidgets('building search keeps TU identifiers with German umlauts',
+      (tester) async {
+    final store = MemoryPlaces().create();
+    final search = RoomSearchController(
+        prefetch: false,
+        search: (_) async => SearchResult.fromJson({
+              'results_geb': [
+                ['Hülße-Bau', 'dresden/geb/hül']
+              ],
+              'results_raum': [],
+              'more_geb': false,
+              'more_raum': false
+            }));
+    await tester.pumpWidget(app(SearchScreen(places: store, search: search)));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'Hülße-Bau');
+    await tester.pump(const Duration(milliseconds: 401));
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(ListTile, 'Hülße-Bau'), findsOneWidget);
+    expect(find.byKey(const ValueKey('place-result-building:dresden:hül')),
+        findsOneWidget);
+    expect(find.text('HÜL · Gebäude'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox());
+    store.dispose();
+    search.dispose();
+  });
+
   testWidgets('more search hits automatically load and show TU room context',
       (tester) async {
     final store = MemoryPlaces().create();
