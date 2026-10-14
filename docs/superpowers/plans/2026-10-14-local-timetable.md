@@ -45,16 +45,16 @@
 - Preserve UID, summary, optional description/location, DTSTART/DTEND or DURATION, VALUE/TZID, one RRULE, all EXDATE values, and detached RECURRENCE-ID overrides.
 - Parse date-only, floating campus-local, UTC, and recognized IANA date-times. Initialize timezone data once. Validate embedded VTIMEZONE observances against the bundled zone for the event's DTSTART through the latest event/query horizon; reject custom or mismatched definitions.
 
-- [ ] **Step 1: Add exact dependencies `file_selector: 1.0.3`, `icalendar_parser: 2.1.0`, `teno_rrule: 0.0.8`, and `timezone: 0.10.1`, retaining the SDK floor at `>=3.0.0`. Run `flutter pub get` and confirm only the intended package/configuration files changed.**
-- [ ] **Step 2: Add parser characterization tests** named `parses_single_event_and_unescapes_text`, `parses_all_day_exclusive_end`, `parses_duration_event`, `preserves_tzid_and_recurrence_identity`, `combines_repeated_exdate_lines`, `rejects_duplicate_uid_and_incomplete_event`, `rejects_unknown_tzid`, `rejects_rdate_multiple_rrules_and_range`, and `rejects_mismatched_iana_vtimezone`; run them and confirm the expected missing parser behavior fails.
+- [x] **Step 1: Add exact dependencies `file_selector: 1.0.3`, `icalendar_parser: 2.1.0`, `teno_rrule: 0.0.8`, and `timezone: 0.10.1`, retaining the SDK floor at `>=3.0.0`. Run `flutter pub get` and confirm only the intended package/configuration files changed.**
+- [x] **Step 2: Add parser characterization tests** named `parses_single_event_and_unescapes_text`, `parses_all_day_exclusive_end`, `parses_duration_event`, `preserves_tzid_and_recurrence_identity`, `combines_repeated_exdate_lines`, `rejects_duplicate_uid_and_incomplete_event`, `rejects_unknown_tzid`, `rejects_rdate_multiple_rrules_and_range`, and `rejects_mismatched_iana_vtimezone`; run them and confirm the expected missing parser behavior fails.
 
 Run: `. .\tools\dev-env.ps1; $env:DART_SUPPRESS_ANALYTICS='true'; flutter test test/timetable/ics_parser_test.dart --no-pub`
 
 Expected: failing parser-behavior assertions for the unimplemented timetable parser; no package-resolution or test-harness errors.
 
-- [ ] **Step 3: Implement bounded content-line/component validation and typed event conversion.** Use `icalendar_parser` for supported iCalendar parsing and a focused adapter for property parameters, RECURRENCE-ID, repeated EXDATE, and exact date semantics.
-- [ ] **Step 4: Run the parser tests and confirm all nine named behaviors pass.**
-- [ ] **Step 5: Commit** as `feat: parse local timetable calendars`.
+- [x] **Step 3: Implement bounded content-line/component validation and typed event conversion.** Use `icalendar_parser` for supported iCalendar parsing and a focused adapter for property parameters, RECURRENCE-ID, repeated EXDATE, and exact date semantics.
+- [x] **Step 4: Run the parser tests and confirm all nine named behaviors pass.**
+- [x] **Step 5: Commit** as `feat: parse local timetable calendars`.
 
 ### Task 2: Timezone-aware recurrence and exception expansion
 
@@ -67,16 +67,16 @@ Expected: failing parser-behavior assertions for the unimplemented timetable par
 - Keep all-day values date-based; return timed occurrences with timezone-aware local values and the original TZID.
 - Expand one RRULE via `RecurrenceRule.from` and `.between`; impose a maximum of 20,000 generated instances per series/window and surface overflow as `IcsImportException`.
 
-- [ ] **Step 1: Write tests** named `expands_weekly_series`, `berlin_weekly_series_keeps_wall_time_across_dst`, `all_day_series_preserves_calendar_days`, `exdate_removes_matching_occurrence`, `applies_moved_and_cancelled_overrides`, `includes_dtstart_even_when_byday_excludes_it`, `count_is_not_restarted_by_late_window`, and `includes_occurrence_equal_to_until`.
-- [ ] **Step 2: Run the recurrence tests and confirm each fails on the expected absent behavior.**
+- [x] **Step 1: Write tests** named `expands_weekly_series`, `berlin_weekly_series_keeps_wall_time_across_dst`, `all_day_series_preserves_calendar_days`, `exdate_removes_matching_occurrence`, `applies_moved_and_cancelled_overrides`, `includes_dtstart_even_when_byday_excludes_it`, `count_is_not_restarted_by_late_window`, and `includes_occurrence_equal_to_until`.
+- [x] **Step 2: Run the recurrence tests and confirm each fails on the expected absent behavior.**
 
 Run: `. .\tools\dev-env.ps1; $env:DART_SUPPRESS_ANALYTICS='true'; flutter test test/timetable/recurrence_expander_test.dart --no-pub`
 
 Expected: failing occurrence assertions, with no test-harness errors.
 
-- [ ] **Step 3: Implement the recurrence adapter.** Combine EXDATE values before filtering; for COUNT, enumerate from DTSTART then trim before exclusions; extend the query endpoint to include an UNTIL-equal instance then enforce UNTIL inclusively; add DTSTART according to RFC recurrence-set semantics; replace original slots with overrides and include moved overrides whose replacement time is in the requested window.
-- [ ] **Step 4: Run both parser and recurrence test files; confirm all pass.**
-- [ ] **Step 5: Commit** as `feat: expand timetable recurrence and exceptions`.
+- [x] **Step 3: Implement the recurrence adapter.** Combine EXDATE values before filtering; for COUNT, enumerate from DTSTART then trim before exclusions; extend the query endpoint to include an UNTIL-equal instance then enforce UNTIL inclusively; add DTSTART according to RFC recurrence-set semantics; replace original slots with overrides and include moved overrides whose replacement time is in the requested window.
+- [x] **Step 4: Run both parser and recurrence test files; confirm all pass.**
+- [x] **Step 5: Commit** as `feat: expand timetable recurrence and exceptions`.
 
 ### Task 3: Venue resolver backed by existing search results
 

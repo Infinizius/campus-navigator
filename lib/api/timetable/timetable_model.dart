@@ -102,3 +102,27 @@ class ParsedTimetable {
 
   const ParsedTimetable({required this.series});
 }
+
+class TimetableOccurrence {
+  final String uid;
+  final String recurrenceId;
+  final String title;
+  final String? description;
+  final String? location;
+  final DateTime start;
+  final DateTime end;
+  final bool allDay;
+  final String? timeZoneId;
+
+  const TimetableOccurrence({
+    required this.uid,
+    required this.recurrenceId,
+    required this.title,
+    required this.start,
+    required this.end,
+    required this.allDay,
+    this.description,
+    this.location,
+    this.timeZoneId,
+  });
+}
