@@ -29,7 +29,10 @@ Die `MaterialApp` verwendet `AppSettingsScope.of(context).themeMode` als
 `themeMode`, `.locale` als `locale` und `AppLocalizations.supportedLocales` als
 `supportedLocales`. `null` bei `locale` folgt der Gerätesprache. Der Callback
 kanonisiert Geräte-Locale-Werte und fällt für nicht unterstützte Sprachen auf
-Englisch zurück:
+Englisch zurück. Ein explizites Standard-Skript einer unterstützten Sprache,
+etwa `de-Latn-DE` oder `ar-Arab-SA`, verwendet den vorhandenen Sprachkatalog.
+Skripte mit eigener Katalogbedeutung bleiben spezifisch: `zh` wird zu
+`zh-Hans`, während das nicht angebotene `zh-Hant` auf Englisch zurückfällt:
 
 ```dart
 localeResolutionCallback: (deviceLocale, _) =>
