@@ -41,6 +41,7 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
   late final TileProvider _tiles;
   final _map = MapController();
   final _search = TextEditingController();
+  final _searchFocus = FocusNode(debugLabel: 'Campus building search');
   final LayerHitNotifier<CampusFeature> _hits = ValueNotifier(null);
   final _tileFailed = ValueNotifier(false);
   CampusFeature? _selected;
@@ -95,6 +96,7 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
     _hits.dispose();
     _tileFailed.dispose();
     _search.dispose();
+    _searchFocus.dispose();
     super.dispose();
   }
 
@@ -105,7 +107,7 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
   }
 
   void _select(CampusFeature building, {bool focus = false}) {
-    FocusScope.of(context).unfocus();
+    _searchFocus.unfocus();
     _search.clear();
     setState(() {
       _selected = building;
@@ -174,6 +176,10 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
         data.backgroundImageData?.dispose();
         return;
       }
+      // A route must not restore the old search field's focus (and reopen the
+      // keyboard, hiding the selected building's details) on the way back.
+      _searchFocus.unfocus();
+      _searchFocus.canRequestFocus = false;
       await Navigator.push(
           context,
           MaterialPageRoute(
@@ -194,7 +200,10 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
           'Etagenplan nicht verfügbar. Verbindung prüfen und erneut versuchen.',
           'Floor plan unavailable. Check your connection and try again.'));
     } finally {
-      if (mounted) setState(() => _opening = false);
+      if (mounted) {
+        _searchFocus.canRequestFocus = true;
+        setState(() => _opening = false);
+      }
     }
   }
 
@@ -377,7 +386,7 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
                           if (hit != null && hit.hitValues.isNotEmpty) {
                             _select(hit.hitValues.first);
                           } else {
-                            FocusScope.of(context).unfocus();
+                            _searchFocus.unfocus();
                             setState(() => _selected = null);
                           }
                         }),
@@ -543,6 +552,7 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
                   child: TextField(
                       key: const ValueKey('campus-search'),
                       controller: _search,
+                      focusNode: _searchFocus,
                       autocorrect: false,
                       decoration: InputDecoration(
                           isDense: true,

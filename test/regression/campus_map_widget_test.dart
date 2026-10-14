@@ -247,6 +247,12 @@ void main() {
     expect(find.text('Andreas-Pfitzmann-Bau'), findsOneWidget);
     expect(
         tester
+            .widget<TextField>(find.byKey(const ValueKey('campus-search')))
+            .focusNode!
+            .hasFocus,
+        isFalse);
+    expect(
+        tester
             .widget<FlutterMap>(find.byType(FlutterMap))
             .mapController!
             .camera
