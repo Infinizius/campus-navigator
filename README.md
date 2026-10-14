@@ -2,6 +2,13 @@
 
 A WIP flutter app that improves the mobile experience of the https://navigator.tu-dresden.de website.
 
+## Interaktive Campuskarte
+
+Der Entwicklungsbranch `feature/campus-map` ergänzt eine OSM-Campuskarte mit
+anklickbaren TU-Gebäuden, Gebäudesuche, Etagenplan-Aufruf und expliziter
+Standortfreigabe. Die bestehende Raumsuche bleibt erhalten.
+[Technischer Bericht, Tests und Einschränkungen](docs/campus-map.md).
+
 ## Private UI / dark-mode experiment
 
 The development branch `work/ui-polish-and-darkmode` preserves the detailed floor-plan
