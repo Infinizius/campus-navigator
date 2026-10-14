@@ -57,6 +57,8 @@ class _SearchBenchmarkState extends State<_SearchBenchmark> {
   final _rasterMicros = <int>[];
   Timer? _timer;
   var _started = false;
+  var _finished = false;
+  var _timingsCallbackRegistered = false;
   var _warmupRemaining = _warmupFrames;
 
   @override
@@ -64,13 +66,17 @@ class _SearchBenchmarkState extends State<_SearchBenchmark> {
     super.initState();
     widget.search.addListener(_onSearchChanged);
     WidgetsBinding.instance.addTimingsCallback(_recordTimings);
+    _timingsCallbackRegistered = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       widget.search.change('repeat search', immediately: true);
     });
   }
 
   void _onSearchChanged() {
-    if (_started || widget.search.result == null || widget.search.loading) {
+    if (_started ||
+        _finished ||
+        widget.search.result == null ||
+        widget.search.loading) {
       return;
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -83,7 +89,7 @@ class _SearchBenchmarkState extends State<_SearchBenchmark> {
   }
 
   void _recordTimings(List<ui.FrameTiming> timings) {
-    if (!_started) return;
+    if (!_started || _finished) return;
     for (final timing in timings) {
       if (_warmupRemaining > 0) {
         _warmupRemaining--;
@@ -98,8 +104,18 @@ class _SearchBenchmarkState extends State<_SearchBenchmark> {
     }
   }
 
+  void _removeTimingsCallback() {
+    if (!_timingsCallbackRegistered) return;
+    WidgetsBinding.instance.removeTimingsCallback(_recordTimings);
+    _timingsCallbackRegistered = false;
+  }
+
   void _finish() {
+    if (_finished) return;
+    _finished = true;
     _timer?.cancel();
+    _timer = null;
+    _removeTimingsCallback();
     final ui = _summaryFor(_uiMicros);
     final raster = _summaryFor(_rasterMicros);
     final slowFrames = List.generate(
@@ -138,7 +154,7 @@ class _SearchBenchmarkState extends State<_SearchBenchmark> {
   @override
   void dispose() {
     _timer?.cancel();
-    WidgetsBinding.instance.removeTimingsCallback(_recordTimings);
+    _removeTimingsCallback();
     widget.search.removeListener(_onSearchChanged);
     widget.search.dispose();
     widget.places.dispose();

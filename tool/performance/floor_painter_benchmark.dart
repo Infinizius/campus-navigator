@@ -33,6 +33,7 @@ class _BenchmarkAppState extends State<_BenchmarkApp> {
   final _uiMicros = <int>[];
   final _rasterMicros = <int>[];
   Timer? _timer;
+  var _timingsCallbackRegistered = false;
   var _running = false;
   var _warmupRemaining = _warmupFrames;
   var _scaleUp = false;
@@ -42,6 +43,7 @@ class _BenchmarkAppState extends State<_BenchmarkApp> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addTimingsCallback(_recordTimings);
+    _timingsCallbackRegistered = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _running = true;
       _timer = Timer.periodic(const Duration(milliseconds: 16), (_) {
@@ -68,10 +70,17 @@ class _BenchmarkAppState extends State<_BenchmarkApp> {
     }
   }
 
+  void _removeTimingsCallback() {
+    if (!_timingsCallbackRegistered) return;
+    WidgetsBinding.instance.removeTimingsCallback(_recordTimings);
+    _timingsCallbackRegistered = false;
+  }
+
   void _finish() {
     _running = false;
     _timer?.cancel();
-    WidgetsBinding.instance.removeTimingsCallback(_recordTimings);
+    _timer = null;
+    _removeTimingsCallback();
     final ui = _summaryFor(_uiMicros);
     final raster = _summaryFor(_rasterMicros);
     final slowFrames = List.generate(
@@ -112,7 +121,7 @@ class _BenchmarkAppState extends State<_BenchmarkApp> {
   @override
   void dispose() {
     _timer?.cancel();
-    WidgetsBinding.instance.removeTimingsCallback(_recordTimings);
+    _removeTimingsCallback();
     _transformation.dispose();
     widget.data.backgroundImageData?.dispose();
     super.dispose();

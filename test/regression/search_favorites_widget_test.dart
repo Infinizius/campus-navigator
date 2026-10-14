@@ -149,6 +149,64 @@ void main() {
     search.dispose();
   });
 
+  testWidgets('mixed search results keep rooms before buildings',
+      (tester) async {
+    final store = MemoryPlaces().create();
+    const result = SearchResult(
+      assist: 'Campus-Hinweis',
+      assist2: '',
+      resultsBuildings: [
+        SearchResultObject(
+            name: 'Andreas-Pfitzmann-Bau',
+            subName: null,
+            identifier: 'dresden/geb/apb')
+      ],
+      resultsRooms: [
+        SearchResultObject(
+            name: 'APB E069',
+            subName: 'APB/E069/P',
+            identifier: 'apb/00/raum/542100.2860')
+      ],
+      moreBuildings: false,
+      moreRooms: false,
+      trenn: 0,
+    );
+    final search = RoomSearchController(
+        prefetch: false, search: (_) async => result);
+
+    await tester.pumpWidget(app(SearchScreen(places: store, search: search)));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'APB');
+    await tester.pump(const Duration(milliseconds: 401));
+    await tester.pumpAndSettle();
+
+    final localizations =
+        AppLocalizations.of(tester.element(find.byType(SearchScreen)))!;
+    final assistantTop = tester.getTopLeft(find.text('Campus-Hinweis')).dy;
+    final roomsHeadingTop =
+        tester.getTopLeft(find.text(localizations.roomsTitle)).dy;
+    final roomTop = tester
+        .getTopLeft(find.byKey(
+            const ValueKey('place-result-room:apb:542100.2860')))
+        .dy;
+    final buildingsHeadingTop =
+        tester.getTopLeft(find.text(localizations.buildingsTitle)).dy;
+    final buildingTop = tester
+        .getTopLeft(
+            find.byKey(const ValueKey('place-result-building:dresden:apb')))
+        .dy;
+
+    expect(assistantTop, lessThan(roomsHeadingTop));
+    expect(roomsHeadingTop, lessThan(roomTop));
+    expect(roomTop, lessThan(buildingsHeadingTop));
+    expect(buildingsHeadingTop, lessThan(buildingTop));
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpWidget(const SizedBox());
+    store.dispose();
+    search.dispose();
+  });
+
   testWidgets('large room result lists remain scrollable and open the last ID',
       (tester) async {
     final store = MemoryPlaces().create();

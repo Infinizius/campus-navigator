@@ -22,7 +22,7 @@ A separate floor-painter cache candidate did not show a stable improvement and w
 
 The previous search results branch converted every room/building into a SavedPlace and built a Widget for every row on each screen build. The result data is unchanged between repeated screen rebuilds, so this work repeated presentation conversion and created off-screen rows on the UI isolate.
 
-The experiment now retains the converted presentation models for only the current SearchResult object and SearchScreen lifetime, and uses ListView.builder to build visible rows lazily. Ordering, identifiers, details, invalid-ID filtering, headings, loading/error states, retry, and load-all behavior are preserved. Regression coverage checks cache identity/invalidation, invalid identifiers, the builder delegate, and opening the last result in the existing 648-result flow.
+The experiment now retains the converted presentation models for only the current SearchResult object and SearchScreen lifetime, and uses ListView.builder to build visible rows lazily. Ordering, identifiers, details, invalid-ID filtering, headings, loading/error states, retry, and load-all behavior are preserved. Regression coverage checks cache identity/invalidation, invalid identifiers, the builder delegate, explicit assistant/room/building section order, and opening the last result in the existing 648-result flow.
 
 Code inspection found existing reuse for campus-map polygon data. No measured map bottleneck justified changing that cache. The floor painter reconstructs geometry and label objects during paint, but the measured synthetic workload did not justify retaining a cache.
 
@@ -43,6 +43,8 @@ Values below are medians across the three runs. Frame durations are milliseconds
 | Frames at/over budget | 3 / 720 | 0 / 720 | 3 fewer |
 
 The baseline-to-after run ranges did not overlap for UI mean, P90, or P99. Raster mean and P90 rose slightly in absolute terms but stayed below 3.4 ms at the median. No after-run frame exceeded the 16.667 ms budget. The measured change is limited to this repeated large-results workload.
+
+After the benchmark recorder was changed to unregister its timing callback when the 240 samples finish, one separate Profile-mode smoke run recorded UI mean/P90/P99 of 2.276/3.347/4.751 ms and raster mean/P90/P99 of 2.762/3.326/7.061 ms, with 0/240 frames over budget. This lifecycle check is not included in the three-run comparison above.
 
 Individual run summaries (all durations in ms):
 
@@ -93,9 +95,9 @@ The small difference is within the variability of these Debug-mode emulator samp
 
 ## Verification and regression checks
 
-- Full Flutter test suite: 254 passed, 26 skipped, 0 failed. The suite includes search/favorites/history, room details, timetable, campus-map widgets, settings persistence, network/cache and offline-error coverage, plus floor-plan golden tests.
+- Full Flutter test suite after review fixes: 255 passed, 26 skipped, 0 failed. The suite includes search/favorites/history, room details, timetable, campus-map widgets, settings persistence, network/cache and offline-error coverage, plus floor-plan golden tests.
 - Floor-plan goldens passed for the existing synthetic phone and tablet light/dark samples. The renderer source is unchanged.
-- flutter analyze --no-pub reported 28 info-level lints and no warnings or errors. Its exit code is non-zero because the analyzer reports these info diagnostics.
+- flutter analyze --no-pub reported 36 info-level lints and no warnings or errors. Its exit code is non-zero because the analyzer reports these info diagnostics.
 - flutter build apk --debug --no-pub succeeded.
 - The final APK passed apksigner verification (v1 and v2) and zipalign verification, installed and launched on emulator-5560.
 - The first incremental APK was 220,457,333 bytes because its ZIP contained 21.5 MB of generated padding. A clean build in this isolated worktree removed the excess; this was a generated-artifact issue, not an application resource increase.
