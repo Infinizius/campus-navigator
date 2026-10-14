@@ -6,33 +6,6 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_map/flutter_map.dart';
 import '../api_services.dart';
 
-/// Settle the gesture before requesting its viewport, cancelling the pending
-/// timer when the map leaves the tree, including quick navigation away.
-final campusTileUpdates =
-    StreamTransformer<TileUpdateEvent, TileUpdateEvent>.fromBind((events) {
-  Timer? timer;
-  StreamSubscription<TileUpdateEvent>? subscription;
-  late StreamController<TileUpdateEvent> output;
-  output = StreamController<TileUpdateEvent>(onListen: () {
-    subscription = events.listen(
-        (event) {
-          if (event.wasTriggeredByTap()) return;
-          timer?.cancel();
-          timer =
-              Timer(const Duration(milliseconds: 180), () => output.add(event));
-        },
-        onError: output.addError,
-        onDone: () {
-          timer?.cancel();
-          output.close();
-        });
-  }, onCancel: () async {
-    timer?.cancel();
-    await subscription?.cancel();
-  });
-  return output.stream;
-});
-
 /// Only viewport tiles. CacheManager honors Cache-Control and ETag, defaulting
 /// to seven days when absent. No seeding, bulk downloads or offline packs.
 class CampusTileProvider extends TileProvider {

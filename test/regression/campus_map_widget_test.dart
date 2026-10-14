@@ -24,6 +24,25 @@ class TestCampusTiles extends TileProvider {
       MemoryImage(TileProvider.transparentImage);
 }
 
+class RecordingCampusTiles extends TileProvider {
+  final List<String> loaded = [];
+  @override
+  ImageProvider getImage(TileCoordinates coordinates, TileLayer options) =>
+      RecordingCampusImage(getTileUrl(coordinates, options), loaded);
+}
+
+class RecordingCampusImage extends MemoryImage {
+  final String url;
+  final List<String> loaded;
+  RecordingCampusImage(this.url, this.loaded)
+      : super(TileProvider.transparentImage);
+  @override
+  Future<MemoryImage> obtainKey(ImageConfiguration configuration) {
+    loaded.add(url);
+    return super.obtainKey(configuration);
+  }
+}
+
 CampusCatalog fixtureCatalog() => CampusCatalog(
     readCache: () async => null,
     fetch: () async => campusFixture(),
@@ -38,6 +57,33 @@ Future<void> choose(WidgetTester tester, String code) async {
 
 void main() {
   setUp(() => APIServices.Shared = APIServices.withoutCache());
+
+  testWidgets('search zoom starts loading native detail tiles for high density',
+      (tester) async {
+    tester.view.devicePixelRatio = 2;
+    tester.view.physicalSize = const Size(1600, 1600);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final catalog = fixtureCatalog();
+    final tiles = RecordingCampusTiles();
+    await tester
+        .pumpWidget(app(CampusMapScreen(catalog: catalog, tiles: tiles)));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 400));
+    final before = tiles.loaded.length;
+    await choose(tester, 'APB');
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+    expect(
+        tiles.loaded
+            .skip(before)
+            .any((url) => Uri.parse(url).pathSegments.first == '19'),
+        isTrue,
+        reason:
+            'A zoomed view must load its own native resolution, rather than keep parent tiles. Loaded: ${tiles.loaded.skip(before).toSet()}');
+    await tester.pumpWidget(const SizedBox());
+    catalog.dispose();
+  });
 
   testWidgets('small phone with keyboard keeps building results usable',
       (tester) async {

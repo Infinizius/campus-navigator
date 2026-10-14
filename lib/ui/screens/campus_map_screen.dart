@@ -400,7 +400,6 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
                   keepBuffer: 2,
                   maxNativeZoom: 19,
                   retinaMode: MediaQuery.devicePixelRatioOf(context) > 1,
-                  tileUpdateTransformer: campusTileUpdates,
                   tileBuilder: dark
                       ? (context, image, tile) => ColorFiltered(
                           // One OSM source, a local night style; no extra tile requests.
