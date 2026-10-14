@@ -133,8 +133,21 @@ SUMMARY:Unknown
     );
   });
 
+  test('rejects_malformed_rrule_before_import', () {
+    expect(
+      () => parseIcsCalendar(calendar(event('''
+UID:bad-rule
+DTSTART:20261014T090000
+DTEND:20261014T100000
+SUMMARY:Bad rule
+RRULE:FREQ=NOT_A_FREQUENCY
+'''))),
+      throwsA(isA<IcsImportException>()),
+    );
+  });
+
   test('rejects_rdate_multiple_rrules_and_range', () {
-    final base = '''
+    const base = '''
 UID:unsupported
 DTSTART:20261014T090000
 DTEND:20261014T100000
@@ -154,7 +167,7 @@ SUMMARY:Unsupported
   });
 
   test('rejects_mismatched_iana_vtimezone', () {
-    final zone = '''
+    const zone = '''
 BEGIN:VTIMEZONE
 TZID:Europe/Berlin
 BEGIN:STANDARD
@@ -173,5 +186,33 @@ SUMMARY:Mismatch
 '''), extra: zone)),
       throwsA(isA<IcsImportException>()),
     );
+  });
+
+  test('accepts_matching_iana_vtimezone', () {
+    const zone = '''
+BEGIN:VTIMEZONE
+TZID:Europe/Berlin
+BEGIN:DAYLIGHT
+DTSTART:19700329T020000
+TZOFFSETFROM:+0100
+TZOFFSETTO:+0200
+RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU
+END:DAYLIGHT
+BEGIN:STANDARD
+DTSTART:19701025T030000
+TZOFFSETFROM:+0200
+TZOFFSETTO:+0100
+RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU
+END:STANDARD
+END:VTIMEZONE
+''';
+    final parsed = parseIcsCalendar(calendar(event('''
+UID:matching-zone
+DTSTART;TZID=Europe/Berlin:20261014T090000
+DTEND;TZID=Europe/Berlin:20261014T100000
+SUMMARY:Berlin lecture
+'''), extra: zone));
+
+    expect(parsed.series.single.start.timeZoneId, 'Europe/Berlin');
   });
 }

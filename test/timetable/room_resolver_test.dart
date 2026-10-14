@@ -131,6 +131,7 @@ void main() {
 
     expect(result.status, RoomResolutionStatus.unresolved);
     expect(result.room, isNull);
+    expect(result.candidates.single.identifier, 'apb/eg/raum/e069');
   });
 
   test('sends_location_only_to_search', () async {

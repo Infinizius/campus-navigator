@@ -30,12 +30,14 @@ class RoomResolver {
     try {
       final response = await _search(query);
       final roomMatches = <String, SavedPlace>{};
+      final roomCandidates = <String, SavedPlace>{};
       for (final result in response.resultsRooms) {
         final place = SavedPlace.tryFromSearch(result, PlaceKind.room);
-        if (place == null || !_aliases(result).contains(normalizedQuery)) {
-          continue;
+        if (place == null) continue;
+        roomCandidates.putIfAbsent(place.identifier, () => place);
+        if (_aliases(result).contains(normalizedQuery)) {
+          roomMatches.putIfAbsent(place.identifier, () => place);
         }
-        roomMatches.putIfAbsent(place.identifier, () => place);
       }
       if (roomMatches.length == 1) {
         return RoomResolution._(
@@ -70,7 +72,10 @@ class RoomResolver {
           List.unmodifiable(buildingMatches.values),
         );
       }
-      return _unresolved();
+      return RoomResolution._(
+        RoomResolutionStatus.unresolved,
+        List.unmodifiable(roomCandidates.values),
+      );
     } catch (_) {
       return _unresolved();
     }

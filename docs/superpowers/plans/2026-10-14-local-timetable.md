@@ -138,15 +138,15 @@ Expected: failing persistence assertions, with no test-harness errors.
 - Floor actions use `loadSavedPlace` then `BuildingScreen`; walking uses only a matched building's `CampusFeature.routeUri` and existing external URL launcher.
 - Use Flutter `file_selector` to filter `.ics`, read `XFile` bytes, reject >5 MiB, parse before asking Update/Replace, and commit only after complete validation. No calendar permission.
 
-- [ ] **Step 1: Write widget tests** named `home_has_timetable_destination_on_phone_and_rail`, `search_home_shows_next_event_preview`, `preview_hides_when_no_upcoming_event`, `today_and_week_views_show_sorted_events`, `import_uses_ics_picker_and_offers_update_or_replace`, `invalid_import_preserves_schedule`, `room_action_opens_verified_place`, `maps_action_uses_verified_building_uri`, `unresolved_room_offers_manual_assignment`, and `timetable_uses_light_and_dark_theme_tokens`.
-- [ ] **Step 2: Run both widget test files and confirm expected absent UI behavior.**
+- [x] **Step 1: Write widget tests** named `home_has_timetable_destination_on_phone_and_rail`, `search_home_shows_next_event_preview`, `preview_hides_when_no_upcoming_event`, `today_and_week_views_show_sorted_events`, `import_uses_ics_picker_and_offers_update_or_replace`, `invalid_import_preserves_schedule`, `room_action_opens_verified_place`, `maps_action_uses_verified_building_uri`, `unresolved_room_offers_manual_assignment`, and `timetable_uses_light_and_dark_theme_tokens`.
+- [x] **Step 2: Run both widget test files and confirm expected absent UI behavior.**
 
 Run: `. .\tools\dev-env.ps1; $env:DART_SUPPRESS_ANALYTICS='true'; flutter test test/timetable/timetable_widget_test.dart test/timetable/next_event_preview_test.dart --no-pub`
 
 Expected: failing widget assertions, with no test-harness errors.
 
-- [ ] **Step 3: Implement the importer and compact Today/week list, add localized English/German copy, preview, and the minimal Home navigation integration.** Retain the shared catalog lifecycle and keep renderer files unchanged.
-- [ ] **Step 4: Run the widget tests plus existing search, navigation, and Campus Identity regression tests; confirm all pass.**
+- [x] **Step 3: Implement the importer and compact Today/week list, add localized English/German copy, preview, and the minimal Home navigation integration.** Retain the shared catalog lifecycle and keep renderer files unchanged.
+- [x] **Step 4: Run the widget tests plus existing search, navigation, and Campus Identity regression tests; confirm all pass.**
 - [ ] **Step 5: Commit** as `feat: add timetable navigation and preview`.
 
 ### Task 6: Support documentation, full verification and delivery evidence

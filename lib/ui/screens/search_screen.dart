@@ -2,10 +2,12 @@ import 'package:campus_navigator/api/building/building_page_data.dart';
 import 'package:campus_navigator/api/place_navigation.dart';
 import 'package:campus_navigator/api/saved_places.dart';
 import 'package:campus_navigator/api/search.dart';
+import 'package:campus_navigator/api/timetable/timetable_store.dart';
 import 'package:campus_navigator/ui/search_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../campus_identity.dart';
+import '../components/next_event_preview.dart';
 import 'building_screen.dart';
 import 'freeroom_search_screen.dart';
 import 'settings_screen.dart';
@@ -14,7 +16,16 @@ class SearchScreen extends StatefulWidget {
   final PlaceStore? places;
   final RoomSearchController? search;
   final Future<BuildingPageData> Function(SavedPlace)? loadPlace;
-  const SearchScreen({super.key, this.places, this.search, this.loadPlace});
+  final TimetableStore? timetable;
+  final VoidCallback? onTapTimetable;
+  const SearchScreen({
+    super.key,
+    this.places,
+    this.search,
+    this.loadPlace,
+    this.timetable,
+    this.onTapTimetable,
+  });
 
   @override
   State<SearchScreen> createState() => _SearchScreenState();
@@ -230,10 +241,16 @@ class _SearchScreenState extends State<SearchScreen> {
 
   List<Widget> _home() => [
         ..._placeStatus(),
+        if (widget.timetable != null) _nextEventPreview(widget.timetable!),
         ..._favorites(),
         const Divider(height: 24),
         ..._recent()
       ];
+
+  Widget _nextEventPreview(TimetableStore store) => NextEventPreview(
+        store: store,
+        onTap: (_) => widget.onTapTimetable?.call(),
+      );
 
   Widget _list(List<Widget> children, {Key? key}) => ListView(
       key: key,
@@ -246,6 +263,7 @@ class _SearchScreenState extends State<SearchScreen> {
         if (bounds.maxWidth < 720) return _list(_home());
         return Column(children: [
           ..._placeStatus(),
+          if (widget.timetable != null) _nextEventPreview(widget.timetable!),
           Expanded(
               child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -1,4 +1,5 @@
 import 'package:icalendar_parser/icalendar_parser.dart';
+import 'package:teno_rrule/teno_rrule.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 import 'ics_time.dart';
@@ -136,6 +137,7 @@ ParsedTimetable parseIcsCalendar(String input) {
       if (rules.length > 1 || _all(component, 'RDATE').isNotEmpty) {
         throw const IcsImportException(IcsImportErrorCode.unsupportedFeature);
       }
+      if (rules.isNotEmpty) _validateRRule(start, rules.single.value);
       final exclusions = <IcsTemporal>[];
       for (final property in _all(component, 'EXDATE')) {
         for (final date in property.value.split(',')) {
@@ -322,6 +324,37 @@ String _decodeText(String value) => value
     .replaceAll(r'\;', ';')
     .replaceAll(r'\\', r'\');
 
+void _validateRRule(IcsTemporal start, String value) {
+  try {
+    final dateTime = start.value.replaceFirst(RegExp(r'Z$'), '');
+    final extended = dateTime.length == 8
+        ? '${dateTime.substring(0, 4)}-${dateTime.substring(4, 6)}-${dateTime.substring(6, 8)}'
+        : '${dateTime.substring(0, 4)}-${dateTime.substring(4, 6)}-${dateTime.substring(6, 8)}'
+            'T${dateTime.substring(9, 11)}:${dateTime.substring(11, 13)}:${dateTime.substring(13, 15)}';
+    final startLine =
+        'DTSTART:$extended${start.kind == IcsTemporalKind.utc ? 'Z' : ''}';
+    final normalizedRule = value.replaceAllMapped(
+      RegExp(r'UNTIL=(\d{8}T\d{6}Z?)', caseSensitive: false),
+      (match) {
+        final raw = match[1]!;
+        final compact = raw.replaceFirst(RegExp(r'Z$'), '');
+        final formatted =
+            '${compact.substring(0, 4)}-${compact.substring(4, 6)}-${compact.substring(6, 8)}'
+            'T${compact.substring(9, 11)}:${compact.substring(11, 13)}:${compact.substring(13, 15)}';
+        return 'UNTIL=$formatted${raw.endsWith('Z') ? 'Z' : ''}';
+      },
+    );
+    final parsed = RecurrenceRule.from('$startLine\nRRULE:$normalizedRule');
+    if (parsed == null || parsed.count == 0 || parsed.interval <= 0) {
+      throw const IcsImportException(IcsImportErrorCode.unsupportedFeature);
+    }
+  } on IcsImportException {
+    rethrow;
+  } catch (_) {
+    throw const IcsImportException(IcsImportErrorCode.unsupportedFeature);
+  }
+}
+
 Duration _parseDuration(String raw) {
   final match = RegExp(
     r'^([+-])?P(?:(\d+)W|(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?)$',
@@ -389,6 +422,7 @@ DateTime _parseBasicDateTime(String value) {
 void _validateTimeZones(_Component root, Iterable<TimetableSeries> series) {
   final embedded = root.children.where((child) => child.name == 'VTIMEZONE');
   final seen = <String>{};
+  final importedSeries = series.toList(growable: false);
   for (final component in embedded) {
     final id = _single(component, 'TZID')?.value;
     if (id == null || !seen.add(id)) {
@@ -400,13 +434,29 @@ void _validateTimeZones(_Component root, Iterable<TimetableSeries> series) {
         event.overrides.any((value) => value.start?.timeZoneId == id));
     if (!expected) continue;
 
-    // The bundled IANA database is authoritative. Accept embedded definitions
-    // only when each observance's offset pair and local transition date agrees
-    // with an actual IANA transition in the imported series' date span.
     final observances = component.children;
-    if (observances.isEmpty) {
+    if (observances.isEmpty ||
+        observances.any(
+            (value) => value.name != 'STANDARD' && value.name != 'DAYLIGHT')) {
       throw const IcsImportException(IcsImportErrorCode.invalidTimezone);
     }
+    final relevant = importedSeries.where((event) =>
+        event.start.timeZoneId == id ||
+        event.exclusions.any((value) => value.timeZoneId == id) ||
+        event.overrides.any((value) => value.start?.timeZoneId == id));
+    final years = relevant.expand(_yearsForSeries).toList();
+    if (years.isEmpty) continue;
+    final firstYear = years.reduce((a, b) => a < b ? a : b);
+    // Validate the IANA rule beyond DTSTART so recurring calendars cannot
+    // carry a stale or incomplete one-off VTIMEZONE transition table.
+    final lastYear = (years.reduce((a, b) => a > b ? a : b) + 10).clamp(
+      firstYear,
+      2100,
+    );
+    final firstInstant = DateTime.utc(firstYear, 1).millisecondsSinceEpoch;
+    final endInstant = DateTime.utc(lastYear + 1, 1).millisecondsSinceEpoch;
+    final location = tz.getLocation(id);
+    final parsedObservances = <_TimezoneObservance>[];
     for (final observance in observances) {
       final localStart = _single(observance, 'DTSTART')?.value;
       final offsetFrom = _single(observance, 'TZOFFSETFROM')?.value;
@@ -414,39 +464,268 @@ void _validateTimeZones(_Component root, Iterable<TimetableSeries> series) {
       if (localStart == null || offsetFrom == null || offsetTo == null) {
         throw const IcsImportException(IcsImportErrorCode.invalidTimezone);
       }
-      final transitionLocal = _parseBasicDateTime(localStart);
-      final candidate = tz.TZDateTime(
-        tz.getLocation(id),
-        transitionLocal.year,
-        transitionLocal.month,
-        transitionLocal.day,
-        transitionLocal.hour,
-        transitionLocal.minute,
-        transitionLocal.second,
-      );
-      if (_formatOffset(candidate.timeZoneOffset) != offsetTo ||
-          !_offsetTransitionExists(id, candidate, offsetFrom, offsetTo)) {
+      final fromSeconds = _parseUtcOffset(offsetFrom);
+      final toSeconds = _parseUtcOffset(offsetTo);
+      final local = _parseBasicDateTime(localStart);
+      final ruleProperties = _all(observance, 'RRULE');
+      final rdateProperties = _all(observance, 'RDATE');
+      if (ruleProperties.length > 1 || rdateProperties.length > 1) {
         throw const IcsImportException(IcsImportErrorCode.invalidTimezone);
       }
+      final rdates = <DateTime>[];
+      for (final property in rdateProperties) {
+        for (final value in property.value.split(',')) {
+          rdates.add(_parseBasicDateTime(value));
+        }
+      }
+      parsedObservances.add(_TimezoneObservance(
+        start: local,
+        offsetFrom: fromSeconds,
+        offsetTo: toSeconds,
+        rule: ruleProperties.isEmpty
+            ? null
+            : _parseTimezoneRule(ruleProperties.single.value),
+        rdates: rdates,
+      ));
+    }
+
+    final matchedObservances = <int>{};
+    var actualTransitions = 0;
+    for (var i = 0; i < location.transitionAt.length; i++) {
+      final instant = location.transitionAt[i];
+      if (instant < firstInstant || instant >= endInstant) continue;
+      final before = location.timeZone(instant - 1000).offset ~/ 1000;
+      final after = location.timeZone(instant).offset ~/ 1000;
+      if (before == after) continue;
+      actualTransitions++;
+      final transitionUtc =
+          DateTime.fromMillisecondsSinceEpoch(instant, isUtc: true);
+      var matched = false;
+      for (var index = 0; index < parsedObservances.length; index++) {
+        final observance = parsedObservances[index];
+        if (observance.offsetFrom != before || observance.offsetTo != after) {
+          continue;
+        }
+        if (_matchesTimezoneObservance(
+          observance,
+          transitionUtc.add(Duration(seconds: observance.offsetFrom)),
+        )) {
+          matched = true;
+          matchedObservances.add(index);
+        }
+      }
+      if (!matched) {
+        throw const IcsImportException(IcsImportErrorCode.invalidTimezone);
+      }
+    }
+    if (actualTransitions == 0) {
+      final eventStart = relevant.first.start;
+      final localEvent = _parseBasicDateTime(eventStart.value);
+      final zoneOffset = tz.TZDateTime(
+        location,
+        localEvent.year,
+        localEvent.month,
+        localEvent.day,
+        localEvent.hour,
+        localEvent.minute,
+        localEvent.second,
+      ).timeZoneOffset.inSeconds;
+      if (!parsedObservances.any((value) => value.offsetTo == zoneOffset)) {
+        throw const IcsImportException(IcsImportErrorCode.invalidTimezone);
+      }
+    } else if (matchedObservances.length != parsedObservances.length) {
+      throw const IcsImportException(IcsImportErrorCode.invalidTimezone);
     }
   }
 }
 
-bool _offsetTransitionExists(
-    String id, DateTime local, String from, String to) {
-  final location = tz.getLocation(id);
-  final before = tz.TZDateTime(location, local.year, local.month, local.day,
-      local.hour, local.minute, local.second - 1);
-  final after = tz.TZDateTime(location, local.year, local.month, local.day,
-      local.hour, local.minute, local.second);
-  return _formatOffset(before.timeZoneOffset) == from &&
-      _formatOffset(after.timeZoneOffset) == to;
+class _TimezoneObservance {
+  final DateTime start;
+  final int offsetFrom;
+  final int offsetTo;
+  final Map<String, List<String>>? rule;
+  final List<DateTime> rdates;
+
+  const _TimezoneObservance({
+    required this.start,
+    required this.offsetFrom,
+    required this.offsetTo,
+    required this.rule,
+    required this.rdates,
+  });
 }
 
-String _formatOffset(Duration offset) {
-  final minutes = offset.inMinutes;
-  final sign = minutes < 0 ? '-' : '+';
-  final absolute = minutes.abs();
-  return '$sign${(absolute ~/ 60).toString().padLeft(2, '0')}'
-      '${(absolute % 60).toString().padLeft(2, '0')}';
+Map<String, List<String>> _parseTimezoneRule(String value) {
+  try {
+    _validateRRule(
+      const IcsTemporal(
+          value: '20000101T000000', kind: IcsTemporalKind.floating),
+      value,
+    );
+    final parts = <String, List<String>>{};
+    const supported = {
+      'FREQ',
+      'INTERVAL',
+      'BYMONTH',
+      'BYMONTHDAY',
+      'BYDAY',
+      'WKST',
+      'UNTIL',
+      'COUNT',
+    };
+    for (final part in value.split(';')) {
+      final separator = part.indexOf('=');
+      if (separator <= 0 || separator == part.length - 1) {
+        throw const IcsImportException(IcsImportErrorCode.invalidTimezone);
+      }
+      final key = part.substring(0, separator).toUpperCase();
+      if (!supported.contains(key) || parts.containsKey(key)) {
+        throw const IcsImportException(IcsImportErrorCode.invalidTimezone);
+      }
+      parts[key] = part.substring(separator + 1).toUpperCase().split(',');
+    }
+    if (parts['FREQ']?.single != 'YEARLY' || parts.containsKey('COUNT')) {
+      throw const IcsImportException(IcsImportErrorCode.invalidTimezone);
+    }
+    return parts;
+  } on IcsImportException {
+    rethrow;
+  } catch (_) {
+    throw const IcsImportException(IcsImportErrorCode.invalidTimezone);
+  }
+}
+
+bool _matchesTimezoneObservance(
+  _TimezoneObservance observance,
+  DateTime wallTime,
+) {
+  if (wallTime.hour != observance.start.hour ||
+      wallTime.minute != observance.start.minute ||
+      wallTime.second != observance.start.second) {
+    return false;
+  }
+  if (wallTime.year == observance.start.year &&
+      wallTime.month == observance.start.month &&
+      wallTime.day == observance.start.day) {
+    return true;
+  }
+  if (observance.rdates.any((value) =>
+      value.year == wallTime.year &&
+      value.month == wallTime.month &&
+      value.day == wallTime.day &&
+      value.hour == wallTime.hour &&
+      value.minute == wallTime.minute &&
+      value.second == wallTime.second)) {
+    return true;
+  }
+  final rule = observance.rule;
+  if (rule == null || wallTime.year < observance.start.year) return false;
+  final interval = int.tryParse(rule['INTERVAL']?.single ?? '1') ?? 0;
+  if (interval < 1 || (wallTime.year - observance.start.year) % interval != 0) {
+    return false;
+  }
+  final until = rule['UNTIL']?.single;
+  if (until != null && wallTime.isAfter(_parseBasicDateTime(until))) {
+    return false;
+  }
+  final months = rule['BYMONTH']?.map(int.tryParse).toList();
+  if (months != null &&
+      (months.any((value) => value == null || value < 1 || value > 12) ||
+          !months.contains(wallTime.month))) {
+    return false;
+  }
+  final monthDays = rule['BYMONTHDAY']?.map(int.tryParse).toList();
+  if (monthDays != null) {
+    final lastDay = DateTime.utc(wallTime.year, wallTime.month + 1, 0).day;
+    final selectedDays = monthDays.map((value) => value == null
+        ? 0
+        : value < 0
+            ? lastDay + value + 1
+            : value);
+    if (monthDays.any((value) => value == null || value == 0) ||
+        !selectedDays.contains(wallTime.day)) {
+      return false;
+    }
+  }
+  final weekdays = rule['BYDAY'];
+  if (weekdays != null &&
+      !weekdays
+          .any((value) => _matchesByDay(wallTime, value, months != null))) {
+    return false;
+  }
+  if (months == null && monthDays == null && weekdays == null) {
+    return wallTime.month == observance.start.month &&
+        wallTime.day == observance.start.day;
+  }
+  return true;
+}
+
+bool _matchesByDay(DateTime date, String value, bool monthScoped) {
+  final match =
+      RegExp(r'^([+-]?\d+)?(MO|TU|WE|TH|FR|SA|SU)$').firstMatch(value);
+  if (match == null) return false;
+  const weekdayNumbers = {
+    'MO': DateTime.monday,
+    'TU': DateTime.tuesday,
+    'WE': DateTime.wednesday,
+    'TH': DateTime.thursday,
+    'FR': DateTime.friday,
+    'SA': DateTime.saturday,
+    'SU': DateTime.sunday,
+  };
+  if (date.weekday != weekdayNumbers[match[2]]) return false;
+  final ordinal = int.tryParse(match[1] ?? '');
+  if (ordinal == null) return true;
+  if (ordinal == 0) return false;
+  final firstDay = monthScoped
+      ? DateTime.utc(date.year, date.month, 1)
+      : DateTime.utc(date.year, 1, 1);
+  final lastDay = monthScoped
+      ? DateTime.utc(date.year, date.month + 1, 0)
+      : DateTime.utc(date.year + 1, 1, 0);
+  final dateOnly = DateTime.utc(date.year, date.month, date.day);
+  var occurrence = 0;
+  var reverseOccurrence = 0;
+  for (var day = firstDay;
+      !day.isAfter(dateOnly);
+      day = day.add(const Duration(days: 1))) {
+    if (day.weekday == date.weekday) occurrence++;
+  }
+  for (var day = lastDay;
+      !day.isBefore(dateOnly);
+      day = day.subtract(const Duration(days: 1))) {
+    if (day.weekday == date.weekday) reverseOccurrence++;
+  }
+  return ordinal > 0 ? occurrence == ordinal : reverseOccurrence == -ordinal;
+}
+
+Iterable<int> _yearsForSeries(TimetableSeries event) sync* {
+  for (final temporal in <IcsTemporal>[
+    event.start,
+    ...event.exclusions,
+    ...event.overrides.map((value) => value.start).whereType<IcsTemporal>(),
+  ]) {
+    if (temporal.kind == IcsTemporalKind.zoned &&
+        temporal.timeZoneId == event.start.timeZoneId) {
+      yield int.parse(temporal.value.substring(0, 4));
+    }
+  }
+}
+
+int _parseUtcOffset(String value) {
+  final match = RegExp(r'^([+-])(\d{2})(\d{2})(\d{2})?$').firstMatch(value);
+  if (match == null) {
+    throw const IcsImportException(IcsImportErrorCode.invalidTimezone);
+  }
+  final hours = int.parse(match[2]!);
+  final minutes = int.parse(match[3]!);
+  final seconds = int.parse(match[4] ?? '0');
+  if (minutes > 59 ||
+      seconds > 59 ||
+      hours > 24 ||
+      (hours == 24 && (minutes != 0 || seconds != 0))) {
+    throw const IcsImportException(IcsImportErrorCode.invalidTimezone);
+  }
+  final total = hours * 3600 + minutes * 60 + seconds;
+  return match[1] == '-' ? -total : total;
 }

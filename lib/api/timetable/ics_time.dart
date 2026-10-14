@@ -30,10 +30,8 @@ IcsTemporal parseIcsTemporal(String raw, Map<String, String> parameters) {
   final match = RegExp(r'^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z?)$')
       .firstMatch(value);
   if (match == null) throw const FormatException('Invalid calendar date-time');
-  final parts = match
-      .groups([1, 2, 3, 4, 5, 6])!
-      .map((part) => int.parse(part!))
-      .toList();
+  final parts =
+      match.groups([1, 2, 3, 4, 5, 6]).map((part) => int.parse(part!)).toList();
   if (!_validDate(value.substring(0, 8)) ||
       parts[3] > 23 ||
       parts[4] > 59 ||
