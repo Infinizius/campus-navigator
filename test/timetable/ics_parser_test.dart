@@ -85,6 +85,64 @@ SUMMARY:Seminar moved
     expect(series.overrides.single.start!.value, '20261029T110000');
   });
 
+  test('detached_override_may_inherit_master_summary', () {
+    final parsed = parseIcsCalendar(calendar(event('''
+UID:weekly-inherit
+DTSTART;TZID=Europe/Berlin:20261014T090000
+DTEND;TZID=Europe/Berlin:20261014T100000
+RRULE:FREQ=WEEKLY;COUNT=3
+SUMMARY:Seminar
+''') + event('''
+UID:weekly-inherit
+RECURRENCE-ID;TZID=Europe/Berlin:20261021T090000
+DTSTART;TZID=Europe/Berlin:20261021T110000
+DTEND;TZID=Europe/Berlin:20261021T120000
+''')));
+
+    expect(parsed.series.single.overrides.single.summary, isNull);
+  });
+
+  test('accepts_and_ignores_standard_valarm_components', () {
+    final parsed = parseIcsCalendar(calendar(event('''
+UID:with-alarm
+DTSTART:20261014T090000
+DTEND:20261014T100000
+SUMMARY:Seminar
+BEGIN:VALARM
+ACTION:DISPLAY
+TRIGGER:-PT15M
+DESCRIPTION:Reminder
+END:VALARM
+''')));
+
+    expect(parsed.series.single.summary, 'Seminar');
+  });
+
+  test('accepts_date_only_rrule_until', () {
+    final parsed = parseIcsCalendar(calendar(event('''
+UID:date-until
+DTSTART;VALUE=DATE:20261014
+DTEND;VALUE=DATE:20261015
+SUMMARY:Seminar
+RRULE:FREQ=DAILY;UNTIL=20261016
+''')));
+
+    expect(parsed.series.single.recurrenceRule, 'FREQ=DAILY;UNTIL=20261016');
+  });
+
+  test('rejects_rrule_until_value_type_mismatched_with_dtstart', () {
+    expect(
+      () => parseIcsCalendar(calendar(event('''
+UID:date-until-mismatch
+DTSTART:20261014T090000
+DTEND:20261014T100000
+SUMMARY:Seminar
+RRULE:FREQ=DAILY;UNTIL=20261016
+'''))),
+      throwsA(isA<IcsImportException>()),
+    );
+  });
+
   test('combines_repeated_exdate_lines', () {
     final parsed = parseIcsCalendar(calendar(event('''
 UID:weekly-2

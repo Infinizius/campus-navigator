@@ -174,6 +174,18 @@ Expected: failing documentation assertions only.
 - [x] **Step 6: Launch the available Android emulator, import a synthetic calendar, check today/week, open a synthetic verified room, check Maps handoff, and capture light/dark screenshots. If ADB remains blocked by the sandbox's socketpair restriction, record exact diagnostics and finish all other checks.**
 - [x] **Step 7: Commit** as `docs: document timetable import and support`.
 
+### Post-review corrections: ICS boundary and timezone behavior
+
+**Files:** `lib/api/timetable/ics_parser.dart`, `lib/api/timetable/recurrence_expander.dart`, their timetable tests, and `docs/timetable.md`.
+
+- [x] Add red tests for UTC `UNTIL` in a `TZID` event, inclusive date-only `UNTIL`, campus-local floating times, inherited override titles, and ignored standard `VALARM` blocks.
+- [x] Compare UTC recurrence boundaries after restoring each occurrence to its event timezone; compare date-only boundaries by calendar date.
+- [x] Expand floating times in `Europe/Berlin` independently of the device timezone; accept missing override `SUMMARY` and standard `VALARM` components.
+- [x] Require RRULE `UNTIL` DATE/DATE-TIME type to match DTSTART and test inclusive date-only UNTIL with an all-day event.
+- [x] Build Today and selected-day windows in `Europe/Berlin`; verify a near-midnight event under `America/Los_Angeles`.
+- [x] Update support docs and rerun the full tests, analyzer, APK signature verification, and emulator launch smoke check on the final code.
+- [x] Review the correction diff and commit it on `feature/timetable` without merging.
+
 ## Execution Choice
 
 Execute this plan inline with `superpowers:executing-plans`. The tasks share model and navigation interfaces and are sequentially dependent, so one implementer can preserve those contracts with per-task TDD and commits. Use the completed read-only parser audits as package evidence and a fresh whole-branch review after all tasks.

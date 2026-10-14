@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:timezone/timezone.dart' as tz;
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../api/building/building_page_data.dart';
@@ -14,6 +15,7 @@ import '../../api/place_navigation.dart';
 import '../../api/saved_places.dart';
 import '../../api/search.dart';
 import '../../api/timetable/ics_parser.dart';
+import '../../api/timetable/ics_time.dart';
 import '../../api/timetable/recurrence_expander.dart';
 import '../../api/timetable/room_resolver.dart';
 import '../../api/timetable/timetable_model.dart';
@@ -66,8 +68,12 @@ class _TimetableScreenState extends State<TimetableScreen> {
   @override
   void initState() {
     super.initState();
-    final now = _now;
-    _selectedDate = DateTime(now.year, now.month, now.day);
+    initializeTimetableTimeZones();
+    final now = tz.TZDateTime.from(
+      _now.toUtc(),
+      tz.getLocation(campusTimeZoneId),
+    );
+    _selectedDate = DateTime.utc(now.year, now.month, now.day);
     widget.store.addListener(_changed);
     _catalog.addListener(_changed);
     if (!widget.store.ready) {
@@ -192,7 +198,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
   }
 
   DateTime _dateOnly(DateTime value) =>
-      DateTime(value.year, value.month, value.day);
+      DateTime.utc(value.year, value.month, value.day);
 
   DateTime _weekStart(DateTime value) => _dateOnly(value)
       .subtract(Duration(days: value.weekday - DateTime.monday));
@@ -217,12 +223,22 @@ class _TimetableScreenState extends State<TimetableScreen> {
       };
 
   List<TimetableOccurrence> _occurrencesFor(DateTime day) {
-    final start = _dateOnly(day);
+    final zone = tz.getLocation(campusTimeZoneId);
+    final start = tz.TZDateTime(zone, day.year, day.month, day.day);
+    final end = tz.TZDateTime(zone, day.year, day.month, day.day + 1);
     return expandTimetable(
       widget.store.events,
       start,
-      start.add(const Duration(days: 1)),
+      end,
     );
+  }
+
+  DateTime get _today {
+    final now = tz.TZDateTime.from(
+      _now.toUtc(),
+      tz.getLocation(campusTimeZoneId),
+    );
+    return DateTime.utc(now.year, now.month, now.day);
   }
 
   Future<RoomResolution> _resolve(String location) {
@@ -473,7 +489,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
         Text(_l.timetableWeek, style: Theme.of(context).textTheme.titleSmall),
         _daySelector(),
         Text(
-          _dateOnly(_selectedDate) == _dateOnly(_now)
+          _dateOnly(_selectedDate) == _today
               ? _l.timetableToday
               : MaterialLocalizations.of(context)
                   .formatMediumDate(_selectedDate),

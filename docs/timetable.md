@@ -37,16 +37,19 @@ The importer accepts a `VCALENDAR` version 2.0 containing one or more
 | Property | Behavior |
 | --- | --- |
 | `UID` | Required stable series key; duplicate master UIDs are rejected. |
-| `DTSTART` | Required date, floating local time, UTC time, or recognized IANA `TZID`. |
+| `DTSTART` | Required date, floating campus-local time (`Europe/Berlin`), UTC time, or recognized IANA `TZID`. |
 | `DTEND` / `DURATION` | One is required for a normal event; they cannot both be present. `DTEND` is exclusive for all-day events. |
-| `SUMMARY` | Required event title. Text escapes are decoded. |
+| `SUMMARY` | Required on a master event. A detached override may inherit it. Text escapes are decoded. |
 | `DESCRIPTION` | Optional text stored locally. |
 | `LOCATION` | Optional room/building text used by the resolver. |
-| `RRULE` | One recurrence rule per master event, parsed by `teno_rrule`. `COUNT` and inclusive `UNTIL` are applied by the recurrence adapter. |
+| `RRULE` | One recurrence rule per master event, parsed by `teno_rrule`. `COUNT` and inclusive `UNTIL` boundaries matching the DTSTART value type are applied by the recurrence adapter. |
 | `EXDATE` | One or more properties and comma-separated values exclude matching recurrence IDs. |
 | `RECURRENCE-ID` | Detached moved and cancelled instances are applied to the matching master series. |
 
-Date-only values are shown as all-day events. The bundled IANA database
+Standard `VALARM` components are ignored. The import does not create reminders
+or notifications. Floating date-times keep their local wall clock in the
+campus timezone, `Europe/Berlin`, regardless of the device timezone. Date-only
+values are shown as all-day events. The bundled IANA database
 provides timezone offsets, including `Europe/Berlin` and its daylight-saving
 changes. Unknown `TZID` values are rejected. If a file includes a `VTIMEZONE`
 for a recognized zone, its `STANDARD`/`DAYLIGHT` transitions must agree with
@@ -57,6 +60,7 @@ The parser rejects unsupported or unsafe input instead of guessing:
 - `RDATE` additions to event recurrence sets are unsupported.
 - More than one `RRULE` on a master event is unsupported.
 - `RECURRENCE-ID;RANGE=THISANDFUTURE` and other range overrides are unsupported.
+- `UNTIL` values whose DATE or DATE-TIME type does not match `DTSTART` are rejected.
 - Unknown/custom timezones, malformed recurrence rules, invalid dates, and
   malformed `VTIMEZONE` definitions are rejected.
 

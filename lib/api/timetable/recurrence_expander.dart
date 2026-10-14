@@ -6,6 +6,7 @@ import 'ics_time.dart';
 import 'timetable_model.dart';
 
 const int maxOccurrencesPerSeries = 20000;
+const String campusTimeZoneId = 'Europe/Berlin';
 
 /// Expands a bounded display window. `begin` is inclusive and `end` exclusive.
 List<TimetableOccurrence> expandTimetable(
@@ -72,8 +73,9 @@ List<TimetableOccurrence> _expandSeries(
     }
     final until = _untilFromRule(series.recurrenceRule!);
     if (until != null) {
-      instances =
-          instances.where((instance) => !instance.isAfter(until)).toList();
+      instances = instances
+          .where((instance) => _isWithinUntil(instance, series.start, until))
+          .toList();
     }
   }
 
@@ -137,12 +139,14 @@ List<TimetableOccurrence> _expandSeries(
 
 RecurrenceRule _parseRule(TimetableSeries series) {
   final start = series.start;
-  // The 0.0.8 engine advances zoned instances by elapsed duration. Generate
-  // local calendar dates, then restore the event's wall clock in its IANA zone.
+  // teno_rrule 0.0.8 uses the host timezone for floating DTSTART values.
+  // Generate calendar fields, then restore the event wall clock in its zone.
   final startLine =
-      'DTSTART:${_toExtended(start.value)}${start.kind == IcsTemporalKind.utc ? 'Z' : ''}';
-  final ruleValue = series.recurrenceRule!
-      .replaceAll(RegExp(r';?UNTIL=\d{8}T\d{6}Z?', caseSensitive: false), '');
+      'DTSTART:${_toExtended(start.value)}${start.kind == IcsTemporalKind.date ? '' : 'Z'}';
+  final ruleValue = series.recurrenceRule!.replaceAll(
+    RegExp(r';?UNTIL=\d{8}(?:T\d{6}Z?)?', caseSensitive: false),
+    '',
+  );
   // teno_rrule 0.0.8 parses EXDATE into a set and compares by day, so EXDATEs
   // are intentionally applied by this adapter using exact recurrence IDs.
   final rule = RecurrenceRule.from('$startLine\nRRULE:$ruleValue');
@@ -152,15 +156,48 @@ RecurrenceRule _parseRule(TimetableSeries series) {
   return rule.copyWith(excludedDates: const {});
 }
 
-DateTime? _untilFromRule(String rule) {
-  final match = RegExp(r'(?:^|;)UNTIL=(\d{8}T\d{6}Z?)', caseSensitive: false)
-      .firstMatch(rule);
+IcsTemporal? _untilFromRule(String rule) {
+  final match =
+      RegExp(r'(?:^|;)UNTIL=(\d{8}(?:T\d{6}Z?)?)', caseSensitive: false)
+          .firstMatch(rule);
   if (match == null) return null;
   final raw = match[1]!;
-  return _toDateTime(IcsTemporal(
+  return IcsTemporal(
     value: raw,
-    kind: raw.endsWith('Z') ? IcsTemporalKind.utc : IcsTemporalKind.floating,
-  ));
+    kind: raw.length == 8
+        ? IcsTemporalKind.date
+        : raw.endsWith('Z')
+            ? IcsTemporalKind.utc
+            : IcsTemporalKind.floating,
+  );
+}
+
+bool _isWithinUntil(
+  DateTime occurrence,
+  IcsTemporal basis,
+  IcsTemporal until,
+) {
+  if (until.kind == IcsTemporalKind.date) {
+    final candidateDate = DateTime.utc(
+      occurrence.year,
+      occurrence.month,
+      occurrence.day,
+    );
+    return !candidateDate.isAfter(_dateOnly(until.value));
+  }
+  if (until.kind == IcsTemporalKind.utc) {
+    return !_preserveWallTime(occurrence, basis).isAfter(_toDateTime(until));
+  }
+  final candidateWallTime = DateTime.utc(
+    occurrence.year,
+    occurrence.month,
+    occurrence.day,
+    occurrence.hour,
+    occurrence.minute,
+    occurrence.second,
+  );
+  final untilWallTime = _wallDateTime(until.value);
+  return !candidateWallTime.isAfter(untilWallTime);
 }
 
 Duration _durationOf(TimetableSeries series, DateTime start) {
@@ -193,9 +230,15 @@ DateTime _windowValue(DateTime value, IcsTemporal basis) {
     return DateTime.utc(value.year, value.month, value.day);
   }
   if (basis.kind == IcsTemporalKind.zoned) {
-    return tz.TZDateTime.from(value.toUtc(), tz.getLocation(basis.timeZoneId!));
+    final localValue = tz.TZDateTime.from(value.toUtc(), _locationFor(basis));
+    return DateTime.utc(localValue.year, localValue.month, localValue.day,
+        localValue.hour, localValue.minute, localValue.second);
   }
-  if (basis.kind == IcsTemporalKind.floating) return value.toLocal();
+  if (basis.kind == IcsTemporalKind.floating) {
+    final localValue = tz.TZDateTime.from(value.toUtc(), _locationFor(basis));
+    return DateTime.utc(localValue.year, localValue.month, localValue.day,
+        localValue.hour, localValue.minute, localValue.second);
+  }
   return value.toUtc();
 }
 
@@ -223,15 +266,15 @@ DateTime _toDateTime(IcsTemporal temporal) {
     return DateTime.utc(
         values[0], values[1], values[2], values[3], values[4], values[5]);
   }
-  return DateTime(
-      values[0], values[1], values[2], values[3], values[4], values[5]);
+  return tz.TZDateTime(tz.getLocation(campusTimeZoneId), values[0], values[1],
+      values[2], values[3], values[4], values[5]);
 }
 
 DateTime _preserveWallTime(DateTime occurrence, IcsTemporal basis) {
   if (basis.kind == IcsTemporalKind.zoned) {
     final start = _toDateTime(basis);
     return tz.TZDateTime(
-      tz.getLocation(basis.timeZoneId!),
+      _locationFor(basis),
       occurrence.year,
       occurrence.month,
       occurrence.day,
@@ -242,7 +285,8 @@ DateTime _preserveWallTime(DateTime occurrence, IcsTemporal basis) {
   }
   if (basis.kind == IcsTemporalKind.floating) {
     final start = _toDateTime(basis);
-    return DateTime(
+    return tz.TZDateTime(
+      _locationFor(basis),
       occurrence.year,
       occurrence.month,
       occurrence.day,
@@ -252,6 +296,23 @@ DateTime _preserveWallTime(DateTime occurrence, IcsTemporal basis) {
     );
   }
   return occurrence;
+}
+
+tz.Location _locationFor(IcsTemporal temporal) =>
+    tz.getLocation(temporal.timeZoneId ?? campusTimeZoneId);
+
+DateTime _wallDateTime(String value) {
+  final compact = value.replaceFirst(RegExp(r'Z$'), '');
+  final parts = RegExp(r'^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})$')
+      .firstMatch(compact)!;
+  return DateTime.utc(
+    int.parse(parts[1]!),
+    int.parse(parts[2]!),
+    int.parse(parts[3]!),
+    int.parse(parts[4]!),
+    int.parse(parts[5]!),
+    int.parse(parts[6]!),
+  );
 }
 
 DateTime _dateOnly(String value) => DateTime.utc(

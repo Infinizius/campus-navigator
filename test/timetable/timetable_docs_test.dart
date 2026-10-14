@@ -15,12 +15,16 @@ void main() {
       'RRULE',
       'EXDATE',
       'RECURRENCE-ID',
+      'VALARM',
       'Europe/Berlin',
     ]) {
       expect(document, contains(feature));
     }
     expect(document, contains('20,000'));
     expect(document, contains('2100'));
+    expect(document, contains('regardless of the device timezone'));
+    expect(document,
+        contains('`UNTIL` boundaries matching the DTSTART value type'));
   });
 
   test('documents privacy and explicit unsupported recurrence behavior', () {

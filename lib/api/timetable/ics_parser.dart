@@ -98,7 +98,7 @@ ParsedTimetable parseIcsCalendar(String input) {
       _validateRange(start, end, duration);
 
       final summary = _decodeText(_single(component, 'SUMMARY')?.value ?? '');
-      if (summary.trim().isEmpty) {
+      if (recurrenceId == null && summary.trim().isEmpty) {
         throw const IcsImportException(IcsImportErrorCode.incompleteEvent);
       }
       final rawDescription = _single(component, 'DESCRIPTION')?.value;
@@ -119,7 +119,7 @@ ParsedTimetable parseIcsCalendar(String input) {
         overrides.putIfAbsent(uid, () => []).add(TimetableOverride(
               recurrenceId: id,
               cancelled: cancelled,
-              summary: summary.isEmpty ? null : summary,
+              summary: summary.trim().isEmpty ? null : summary,
               description: description,
               location: location,
               start: start,
@@ -236,8 +236,14 @@ _Component _parseComponents(List<String> lines) {
     final property = _parseProperty(line);
     if (property.name == 'BEGIN') {
       final name = property.value.toUpperCase();
-      if (!{'VCALENDAR', 'VEVENT', 'VTIMEZONE', 'STANDARD', 'DAYLIGHT'}
-          .contains(name)) {
+      if (!{
+        'VCALENDAR',
+        'VEVENT',
+        'VALARM',
+        'VTIMEZONE',
+        'STANDARD',
+        'DAYLIGHT',
+      }.contains(name)) {
         throw const IcsImportException(IcsImportErrorCode.unsupportedFeature);
       }
       final component = _Component(name);
@@ -247,6 +253,12 @@ _Component _parseComponents(List<String> lines) {
         }
         root = component;
       } else {
+        if (name == 'VALARM' && stack.last.name != 'VEVENT') {
+          throw const IcsImportException(IcsImportErrorCode.invalidCalendar);
+        }
+        if (stack.last.name == 'VALARM') {
+          throw const IcsImportException(IcsImportErrorCode.invalidCalendar);
+        }
         stack.last.children.add(component);
       }
       stack.add(component);
@@ -338,6 +350,21 @@ String _decodeText(String value) => value
 
 void _validateRRule(IcsTemporal start, String value) {
   try {
+    final until =
+        RegExp(r'(?:^|;)UNTIL=(\d{8}(?:T\d{6}Z?)?)', caseSensitive: false)
+            .firstMatch(value)?[1];
+    if (until != null) {
+      final dateOnly = until.length == 8;
+      final utc = until.endsWith('Z');
+      final validType = switch (start.kind) {
+        IcsTemporalKind.date => dateOnly,
+        IcsTemporalKind.floating => !dateOnly && !utc,
+        IcsTemporalKind.utc || IcsTemporalKind.zoned => !dateOnly && utc,
+      };
+      if (!validType) {
+        throw const IcsImportException(IcsImportErrorCode.unsupportedFeature);
+      }
+    }
     final dateTime = start.value.replaceFirst(RegExp(r'Z$'), '');
     final extended = dateTime.length == 8
         ? '${dateTime.substring(0, 4)}-${dateTime.substring(4, 6)}-${dateTime.substring(6, 8)}'

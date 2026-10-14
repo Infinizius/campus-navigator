@@ -220,6 +220,20 @@ void main() {
     store.dispose();
   });
 
+  testWidgets('timetable_day_uses_campus_timezone_boundary', (tester) async {
+    final store = await makeStore([
+      event('near-midnight', 'Campus midnight lecture', '20261015T003000'),
+    ]);
+    await pumpScreen(
+      tester,
+      TimetableScreen(store: store, clock: () => DateTime(2026, 10, 15, 8)),
+    );
+
+    expect(find.text('Campus midnight lecture'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+    store.dispose();
+  });
+
   testWidgets('import_uses_ics_picker_and_offers_update_or_replace',
       (tester) async {
     final store = await makeStore([]);
