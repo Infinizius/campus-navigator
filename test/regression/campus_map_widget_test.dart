@@ -336,6 +336,77 @@ void main() {
     catalog.dispose();
   });
 
+  for (final throws in [false, true]) {
+    testWidgets('navigation launch failure is recoverable (throws: $throws)',
+        (tester) async {
+      var launches = 0;
+      var locations = 0;
+      final catalog = fixtureCatalog();
+      await tester.pumpWidget(app(CampusMapScreen(
+          catalog: catalog,
+          tiles: TestCampusTiles(),
+          locate: () async {
+            locations++;
+            return const LatLng(51, 13);
+          },
+          launchRoute: (_) async {
+            launches++;
+            if (throws) throw StateError('No activity');
+            return false;
+          })));
+      await tester.pumpAndSettle();
+      await choose(tester, 'APB');
+      expect(find.text('Navigieren'), findsOneWidget);
+      final button = find.byKey(const ValueKey('campus-route'));
+      expect(tester.getSize(button).height, greaterThanOrEqualTo(48));
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Navigation konnte nicht geöffnet werden'),
+          findsOneWidget);
+      expect(locations, 0);
+      expect(launches, 1);
+      expect(tester.widget<OutlinedButton>(button).onPressed, isNotNull);
+      // Let the error snackbar leave the compact viewport before tapping again.
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+      expect(launches, 2);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+      catalog.dispose();
+    });
+  }
+
+  testWidgets('navigation stays disabled for a building without coordinates',
+      (tester) async {
+    var launches = 0;
+    final records = jsonDecode(campusFixture()) as List;
+    records.add({'krz': 'NOCO', 'name': 'No coordinates'});
+    final catalog = CampusCatalog(
+        readCache: () async => null,
+        fetch: () async => jsonEncode(records),
+        writeCache: (_) async {});
+    await tester.pumpWidget(app(CampusMapScreen(
+        catalog: catalog,
+        tiles: TestCampusTiles(),
+        launchRoute: (_) async {
+          launches++;
+          return true;
+        })));
+    await tester.pumpAndSettle();
+    await choose(tester, 'NOCO');
+    expect(
+        tester
+            .widget<OutlinedButton>(find.byKey(const ValueKey('campus-route')))
+            .onPressed,
+        isNull);
+    expect(launches, 0);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+    catalog.dispose();
+  });
+
   testWidgets(
       'location is requested only on button tap; denial keeps map usable',
       (tester) async {

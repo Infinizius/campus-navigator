@@ -136,8 +136,16 @@ class CampusFeature {
 
   String get floorCode => code.toLowerCase();
 
-  Uri get routeUri {
-    final point = mapPoint!;
+  /// No entrance coordinates are verified in the public TU catalog. Use only
+  /// its validated geographic footprint, never floor-plan or guessed entrances.
+  /// The universal HTTPS URL opens Maps when available, otherwise a browser.
+  Uri? get routeUri {
+    final point = mapPoint;
+    if (point == null ||
+        !point.latitude.isFinite ||
+        !point.longitude.isFinite ||
+        point.latitude.abs() > 90 ||
+        point.longitude.abs() > 180) return null;
     return Uri.https('www.google.com', '/maps/dir/', {
       'api': '1',
       'destination': '${point.latitude},${point.longitude}',

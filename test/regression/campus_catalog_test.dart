@@ -96,10 +96,75 @@ void main() {
     final apb =
         parseCampusBuildings(fixture).singleWhere((b) => b.code == 'APB');
     expect(apb.floorCode, 'apb');
-    expect(apb.routeUri.queryParameters['destination'],
+    expect(apb.routeUri!.queryParameters['destination'],
         '${apb.mapPoint!.latitude},${apb.mapPoint!.longitude}');
-    expect(apb.routeUri.queryParameters['travelmode'], 'walking');
-    expect(apb.routeUri.queryParameters.containsKey('origin'), isFalse);
+    expect(apb.routeUri!.queryParameters['travelmode'], 'walking');
+    expect(apb.routeUri!.queryParameters.containsKey('origin'), isFalse);
+  });
+
+  test('missing or projected coordinates cannot produce a navigation URL', () {
+    for (final points in [
+      null,
+      [],
+      [
+        [
+          {'x': 462000, 'y': 5650000},
+          {'x': 462010, 'y': 5650000},
+          {'x': 462010, 'y': 5650010}
+        ]
+      ]
+    ]) {
+      final building = CampusFeature.fromJson(
+          {'krz': 'TEST', 'name': 'No valid coordinates', 'punkte': points})!;
+      expect(building.routeUri, isNull);
+    }
+  });
+
+  test('APB and BAR URLs use the independently inspected WGS84 targets', () {
+    final buildings = parseCampusBuildings(fixture);
+    const expected = {
+      'APB': [51.02546115, 13.72293115],
+      'BAR': [51.02680695, 13.72351765],
+    };
+    for (final entry in expected.entries) {
+      final uri = buildings.singleWhere((b) => b.code == entry.key).routeUri!;
+      final destination = uri.queryParameters['destination']!
+          .split(',')
+          .map(double.parse)
+          .toList();
+      expect(destination[0], closeTo(entry.value[0], 1e-8));
+      expect(destination[1], closeTo(entry.value[1], 1e-8));
+    }
+  });
+
+  test('unverified entrance fields never override the geographic fallback', () {
+    final records = jsonDecode(fixture) as List;
+    for (final code in ['APB', 'BAR']) {
+      final record = records.singleWhere((b) => b['krz'] == code) as Map;
+      final original = CampusFeature.fromJson(record)!;
+      for (final entrances in [
+        null,
+        [],
+        [
+          {'x': 100, 'y': 200, 'name': 'Haupteingang'}
+        ],
+        [
+          {'x': 13.0, 'y': 51.0, 'name': 'Unverified'}
+        ]
+      ]) {
+        final building =
+            CampusFeature.fromJson({...record, 'eingänge': entrances})!;
+        expect(building.routeUri, original.routeUri);
+        final uri = building.routeUri!;
+        expect(uri.scheme, 'https');
+        expect(uri.host, 'www.google.com');
+        expect(uri.path, '/maps/dir/');
+        expect(uri.queryParameters['api'], '1');
+        expect(uri.queryParameters['travelmode'], 'walking');
+        expect(uri.queryParameters.containsKey('origin'), isFalse);
+        expect(Uri.parse(uri.toString()), uri);
+      }
+    }
   });
 
   test('German building codes are retained exactly, never transliterated', () {

@@ -209,13 +209,20 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
 
   Future<void> _route(CampusFeature building) async {
     if (_routing) return;
+    final uri = building.routeUri;
+    if (uri == null) {
+      _message(_t('Keine gültigen Zielkoordinaten verfügbar.',
+          'No valid destination coordinates available.'));
+      return;
+    }
     setState(() => _routing = true);
     try {
-      final opened = await (widget.launchRoute?.call(building.routeUri) ??
-          launchUrl(building.routeUri, mode: LaunchMode.externalApplication));
+      final opened = await (widget.launchRoute?.call(uri) ??
+          launchUrl(uri, mode: LaunchMode.externalApplication));
       if (!opened) {
-        _message(_t('Keine Navigations-App verfügbar.',
-            'No navigation app available.'));
+        _message(_t(
+            'Navigation konnte nicht geöffnet werden. Kein Browser oder keine Karten-App verfügbar.',
+            'Could not open navigation. No browser or maps app available.'));
       }
     } catch (_) {
       _message(_t('Navigation konnte nicht geöffnet werden.',
@@ -339,12 +346,13 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
                               : _t('Etagenpläne', 'Floor plans'))),
                       OutlinedButton.icon(
                           key: const ValueKey('campus-route'),
-                          onPressed: b.mapPoint == null || _routing
+                          onPressed: b.routeUri == null || _routing
                               ? null
                               : () => _route(b),
-                          icon: const Icon(Icons.directions_outlined, size: 18),
-                          label: Text(
-                              _t('Route zum Gebäude', 'Route to building'))),
+                          style: OutlinedButton.styleFrom(
+                              minimumSize: const Size(0, 48)),
+                          icon: const Icon(Icons.navigation_outlined, size: 18),
+                          label: Text(_t('Navigieren', 'Navigate'))),
                     ]),
                     const SizedBox(height: 4),
                     Text(
