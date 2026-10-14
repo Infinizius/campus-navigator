@@ -39,29 +39,29 @@
 
 ### Task 1: Preserve and integrate completed changes
 
-- [ ] Create a safety tag at the latest documented known-good candidate commit.
-- [ ] Create an isolated release QA branch from `feature/ui-refinement`; confirm it includes `feature/campus-map` and `feature/search-and-favorites` ancestry.
-- [ ] Merge `feature/settings` into the release QA branch with a merge commit; preserve the consolidated UI implementation and record any conflict resolutions.
-- [ ] Include unique settings evidence from `feature/settings` while avoiding duplicate runtime code.
-- [ ] Keep indoor-navigation experiment files out of scope.
+- [x] Create a safety tag at the latest documented known-good candidate commit.
+- [x] Create an isolated release QA branch from `feature/ui-refinement`; confirm it includes `feature/campus-map` and `feature/search-and-favorites` ancestry.
+- [x] Merge `feature/settings` into the release QA branch with a merge commit; preserve the consolidated UI implementation and record any conflict resolutions.
+- [x] Include unique settings evidence from `feature/settings` while avoiding duplicate runtime code.
+- [x] Keep indoor-navigation experiment files out of scope.
 
 ### Task 2: Establish automated regression status
 
-- [ ] Run `flutter analyze` and `flutter test` from the integration worktree.
-- [ ] Review existing tests for search, result selection, favorites/history, map, floors, identity, settings, persistence, and localization.
-- [ ] Add widget/integration coverage only for a concrete uncovered regression or reproducible failure.
-- [ ] For each code fix, run its focused test first, then the relevant full suite.
+- [x] Run `flutter analyze` and `flutter test` from the integration worktree.
+- [x] Review existing tests for search, result selection, favorites/history, map, floors, identity, settings, persistence, and localization.
+- [x] Add focused widget coverage for rotated building detail actions.
+- [x] Run the focused widget test, then the relevant full suite.
 
 ### Task 3: Visual and device QA
 
-- [ ] Review available reference screenshots for phone/tablet and light/dark states.
-- [ ] Check room labels, contrast, highlighted rooms, layout overflow, and minimum touch targets.
-- [ ] Exercise search-to-room, favorites/history, building/map/floor selection, navigation handoff and return, settings persistence, back navigation, rotation, and large text in the emulator where supported.
-- [ ] Build an Android debug APK and record its exact path and verification status.
+- [x] Review available reference screenshots for phone/tablet and light/dark states.
+- [x] Check room labels, contrast, highlighted rooms, layout overflow, and minimum touch targets.
+- [x] Exercise search-to-room, favorites/history, building/map/floor selection, navigation handoff and return, settings persistence, back navigation, rotation, and large text in the emulator where supported.
+- [x] Build an Android debug APK and record its exact path and verification status.
 
 ### Task 4: Release candidate report
 
-- [ ] Record commands and outcomes, remaining defects, untested paths, visual findings, and recommended next steps in `docs/release-candidate-qa.md`.
-- [ ] Create an annotated rollback tag `v0.1.0-rc1` on the verified candidate commit.
-- [ ] Confirm the stable `master` ref remains unchanged and the release QA worktree is clean apart from intentional candidate changes.
-- [ ] Stop before merging or transferring changes to `master`; user approval is required for that final step.
+- [x] Record commands and outcomes, remaining defects, untested paths, visual findings, and recommended next steps in `docs/release-candidate-qa.md`.
+- [x] Create an annotated rollback tag `v0.1.0-rc1` on the verified candidate commit.
+- [x] Confirm the stable `master` ref remains unchanged and the release QA worktree is clean apart from intentional candidate changes.
+- [x] Stop before merging or transferring changes to `master`; user approval is required for that final step.

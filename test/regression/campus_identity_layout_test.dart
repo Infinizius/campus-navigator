@@ -88,6 +88,36 @@ void main() {
     places.dispose();
     search.dispose();
   });
+  testWidgets('rotated building details can scroll to floor and route actions',
+      (tester) async {
+    tester.view.physicalSize = const Size(852, 393);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final catalog = fixtureCatalog();
+    final places = MemoryPlaces().create();
+    final search = RoomSearchController(prefetch: false);
+    await tester.pumpWidget(layoutApp(HomeScreen(
+        catalog: catalog,
+        tiles: TestCampusTiles(),
+        places: places,
+        search: search)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Campuskarte'));
+    await tester.pumpAndSettle();
+    await choose(tester, 'APB');
+    await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -140));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('campus-open-floor')).hitTestable(),
+        findsOneWidget);
+    expect(find.byKey(const ValueKey('campus-route')).hitTestable(),
+        findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+    catalog.dispose();
+    places.dispose();
+    search.dispose();
+  });
   testWidgets('portrait tablet collapsed sheet reserves exactly its header',
       (tester) async {
     tester.view.physicalSize = const Size(800, 1280);
