@@ -223,8 +223,8 @@
   "settingsShowPassword": "Показать пароль",
   "settingsHidePassword": "Скрыть пароль",
   "settingsCredentialsLoadFailure": "Не удалось загрузить сохранённые настройки входа. Редактирование приостановлено.",
-  "settingsRestoreDefaultsDescription": "Использовать тему и язык устройства, автоматическое оформление карты кампуса и вариант A стиля Campus Identity?",
-  "settingsIdentityStyleTitle": "Campus Identity",
-  "settingsIdentityAcademic": "Modern Academic · вариант A",
-  "settingsIdentityWayfinding": "Campus Wayfinding · вариант B"
+  "settingsRestoreDefaultsDescription": "Использовать тему и язык устройства, автоматическое оформление карты кампуса и современный академический стиль оформления кампуса (вариант A)?",
+  "settingsIdentityStyleTitle": "Оформление кампуса",
+  "settingsIdentityAcademic": "Современный академический стиль · вариант A",
+  "settingsIdentityWayfinding": "Навигация по кампусу · вариант B"
 }

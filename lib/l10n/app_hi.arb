@@ -214,7 +214,7 @@
   "settingsHistoryActionSuccess": "इतिहास साफ़ हो गया।",
   "settingsHistoryActionFailure": "इतिहास साफ़ नहीं हो सका। फिर से कोशिश करें।",
   "settingsSaveFailure": "सेटिंग सहेजी नहीं जा सकी। फिर से कोशिश करें।",
-  "settingsRestoreDefaultsDescription": "डिवाइस की थीम और भाषा, परिसर के नक्शे की अपने आप चुनी गई शैली और Campus Identity विकल्प A इस्तेमाल करें?",
+  "settingsRestoreDefaultsDescription": "डिवाइस की थीम और भाषा, परिसर के नक्शे की अपने आप चुनी गई शैली और परिसर के डिज़ाइन का आधुनिक शैक्षणिक विकल्प A इस्तेमाल करें?",
   "settingsCacheBytesUnit": "B",
   "settingsCacheKilobytesUnit": "KB",
   "settingsCacheMegabytesUnit": "MB",
@@ -224,7 +224,7 @@
   "settingsShowPassword": "पासवर्ड दिखाएँ",
   "settingsHidePassword": "पासवर्ड छिपाएँ",
   "settingsCredentialsLoadFailure": "सहेजी गई लॉगिन सेटिंग लोड नहीं हो सकीं। संपादन रोक दिया गया है।",
-  "settingsIdentityStyleTitle": "Campus Identity",
-  "settingsIdentityAcademic": "Modern Academic · विकल्प A",
-  "settingsIdentityWayfinding": "Campus Wayfinding · विकल्प B"
+  "settingsIdentityStyleTitle": "परिसर का डिज़ाइन",
+  "settingsIdentityAcademic": "आधुनिक शैक्षणिक · विकल्प A",
+  "settingsIdentityWayfinding": "परिसर के दिशा संकेत · विकल्प B"
 }

@@ -214,7 +214,7 @@
   "settingsHistoryActionSuccess": "History cleared.",
   "settingsHistoryActionFailure": "Could not clear history. Please try again.",
   "settingsSaveFailure": "Could not save the setting. Please try again.",
-  "settingsRestoreDefaultsDescription": "Use the device theme and language, automatic campus map styling, and Campus Identity option A.",
+  "settingsRestoreDefaultsDescription": "Use the device theme and language, automatic campus map styling, and campus design option A.",
   "settingsCacheBytesUnit": "B",
   "settingsCacheKilobytesUnit": "KB",
   "settingsCacheMegabytesUnit": "MB",
@@ -224,7 +224,7 @@
   "settingsShowPassword": "Show password",
   "settingsHidePassword": "Hide password",
   "settingsCredentialsLoadFailure": "Saved login settings could not be loaded. Editing is paused.",
-  "settingsIdentityWayfinding": "Campus Wayfinding · option B",
-  "settingsIdentityAcademic": "Modern Academic · option A",
-  "settingsIdentityStyleTitle": "Campus Identity"
+  "settingsIdentityWayfinding": "Campus wayfinding · Option B",
+  "settingsIdentityAcademic": "Modern academic · Option A",
+  "settingsIdentityStyleTitle": "Campus design"
 }

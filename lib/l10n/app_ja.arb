@@ -214,7 +214,7 @@
   "settingsHistoryActionSuccess": "履歴を削除しました。",
   "settingsHistoryActionFailure": "履歴を削除できませんでした。もう一度お試しください。",
   "settingsSaveFailure": "設定を保存できませんでした。もう一度お試しください。",
-  "settingsRestoreDefaultsDescription": "端末のテーマと言語を使用し、キャンパスマップのスタイルを自動に、Campus Identity をオプション A に戻しますか？",
+  "settingsRestoreDefaultsDescription": "端末のテーマと言語を使用し、キャンパスマップのスタイルを自動に、キャンパスデザインをモダンな学術スタイル（オプション A）に戻しますか？",
   "settingsCacheBytesUnit": "B",
   "settingsCacheKilobytesUnit": "KB",
   "settingsCacheMegabytesUnit": "MB",
@@ -224,7 +224,7 @@
   "settingsShowPassword": "パスワードを表示",
   "settingsHidePassword": "パスワードを非表示",
   "settingsCredentialsLoadFailure": "保存したログイン設定を読み込めませんでした。編集を一時停止しています。",
-  "settingsIdentityStyleTitle": "Campus Identity",
-  "settingsIdentityAcademic": "Modern Academic · オプション A",
-  "settingsIdentityWayfinding": "Campus Wayfinding · オプション B"
+  "settingsIdentityStyleTitle": "キャンパスデザイン",
+  "settingsIdentityAcademic": "モダンな学術スタイル · オプション A",
+  "settingsIdentityWayfinding": "キャンパス案内 · オプション B"
 }

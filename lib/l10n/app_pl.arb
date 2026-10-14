@@ -223,8 +223,8 @@
   "settingsShowPassword": "Pokaż hasło",
   "settingsHidePassword": "Ukryj hasło",
   "settingsCredentialsLoadFailure": "Nie udało się wczytać zapisanych ustawień logowania. Edycja została wstrzymana.",
-  "settingsRestoreDefaultsDescription": "Używać motywu i języka urządzenia, automatycznego stylu mapy kampusu oraz opcji A stylu Campus Identity?",
-  "settingsIdentityStyleTitle": "Campus Identity",
-  "settingsIdentityAcademic": "Modern Academic · opcja A",
-  "settingsIdentityWayfinding": "Campus Wayfinding · opcja B"
+  "settingsRestoreDefaultsDescription": "Używać motywu i języka urządzenia, automatycznego stylu mapy kampusu oraz nowoczesnego stylu akademickiego kampusu (opcja A)?",
+  "settingsIdentityStyleTitle": "Styl kampusu",
+  "settingsIdentityAcademic": "Nowoczesny styl akademicki · opcja A",
+  "settingsIdentityWayfinding": "System oznakowania kampusu · opcja B"
 }

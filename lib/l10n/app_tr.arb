@@ -223,8 +223,8 @@
   "settingsShowPassword": "Parolayı göster",
   "settingsHidePassword": "Parolayı gizle",
   "settingsCredentialsLoadFailure": "Kayıtlı giriş ayarları yüklenemedi. Düzenleme duraklatıldı.",
-  "settingsRestoreDefaultsDescription": "Cihazın teması ve dili, otomatik kampüs haritası stili ve Campus Identity seçeneği A kullanılsın mı?",
-  "settingsIdentityStyleTitle": "Campus Identity",
-  "settingsIdentityAcademic": "Modern Academic · seçenek A",
-  "settingsIdentityWayfinding": "Campus Wayfinding · seçenek B"
+  "settingsRestoreDefaultsDescription": "Cihazın teması ve dili, otomatik kampüs haritası stili ve kampüs tasarımında modern akademik stil (seçenek A) kullanılsın mı?",
+  "settingsIdentityStyleTitle": "Kampüs tasarımı",
+  "settingsIdentityAcademic": "Modern akademik · seçenek A",
+  "settingsIdentityWayfinding": "Kampüs yönlendirme sistemi · seçenek B"
 }

@@ -223,8 +223,8 @@
   "settingsShowPassword": "عرض كلمة المرور",
   "settingsHidePassword": "إخفاء كلمة المرور",
   "settingsCredentialsLoadFailure": "تعذّر تحميل إعدادات تسجيل الدخول المحفوظة. تم تعليق التعديل.",
-  "settingsRestoreDefaultsDescription": "هل تريد استخدام مظهر الجهاز ولغته، والنمط التلقائي لخريطة الحرم الجامعي، والخيار A من Campus Identity؟",
-  "settingsIdentityStyleTitle": "Campus Identity",
-  "settingsIdentityAcademic": "Modern Academic · الخيار A",
-  "settingsIdentityWayfinding": "Campus Wayfinding · الخيار B"
+  "settingsRestoreDefaultsDescription": "هل تريد استخدام مظهر الجهاز ولغته، والنمط التلقائي لخريطة الحرم الجامعي، والتصميم الأكاديمي العصري للحرم الجامعي (الخيار A)؟",
+  "settingsIdentityStyleTitle": "تصميم الحرم الجامعي",
+  "settingsIdentityAcademic": "أكاديمي عصري · الخيار A",
+  "settingsIdentityWayfinding": "نظام إرشاد الحرم الجامعي · الخيار B"
 }

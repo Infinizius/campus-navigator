@@ -214,7 +214,7 @@
   "settingsHistoryActionSuccess": "기록을 삭제했습니다.",
   "settingsHistoryActionFailure": "기록을 삭제하지 못했습니다. 다시 시도하세요.",
   "settingsSaveFailure": "설정을 저장하지 못했습니다. 다시 시도하세요.",
-  "settingsRestoreDefaultsDescription": "기기의 테마와 언어, 자동 캠퍼스 지도 스타일, Campus Identity 옵션 A를 사용할까요?",
+  "settingsRestoreDefaultsDescription": "기기의 테마와 언어를 사용하고, 캠퍼스 지도 스타일을 자동으로, 캠퍼스 디자인을 현대적 학술 스타일(옵션 A)로 초기화할까요?",
   "settingsCacheBytesUnit": "B",
   "settingsCacheKilobytesUnit": "KB",
   "settingsCacheMegabytesUnit": "MB",
@@ -224,7 +224,7 @@
   "settingsShowPassword": "비밀번호 표시",
   "settingsHidePassword": "비밀번호 숨기기",
   "settingsCredentialsLoadFailure": "저장된 로그인 설정을 불러오지 못했습니다. 편집이 일시 중지되었습니다.",
-  "settingsIdentityStyleTitle": "Campus Identity",
-  "settingsIdentityAcademic": "Modern Academic · 옵션 A",
-  "settingsIdentityWayfinding": "Campus Wayfinding · 옵션 B"
+  "settingsIdentityStyleTitle": "캠퍼스 디자인",
+  "settingsIdentityAcademic": "현대적 학술 스타일 · 옵션 A",
+  "settingsIdentityWayfinding": "캠퍼스 길 안내 · 옵션 B"
 }

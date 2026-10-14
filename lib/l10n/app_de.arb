@@ -214,7 +214,7 @@
   "settingsHistoryActionSuccess": "Verlauf gelöscht.",
   "settingsHistoryActionFailure": "Verlauf konnte nicht gelöscht werden. Bitte erneut versuchen.",
   "settingsSaveFailure": "Einstellung konnte nicht gespeichert werden. Bitte erneut versuchen.",
-  "settingsRestoreDefaultsDescription": "Gerätedesign und Gerätesprache, automatische Kartendarstellung und Campus Identity Option A verwenden?",
+  "settingsRestoreDefaultsDescription": "Gerätedesign und Gerätesprache, automatische Kartendarstellung und Campus-Design Option A verwenden?",
   "settingsCacheBytesUnit": "B",
   "settingsCacheKilobytesUnit": "KB",
   "settingsCacheMegabytesUnit": "MB",
@@ -224,7 +224,7 @@
   "settingsShowPassword": "Passwort anzeigen",
   "settingsHidePassword": "Passwort ausblenden",
   "settingsCredentialsLoadFailure": "Gespeicherte Anmeldeeinstellungen konnten nicht geladen werden. Die Bearbeitung ist pausiert.",
-  "settingsIdentityWayfinding": "Campus Wayfinding · Option B",
-  "settingsIdentityAcademic": "Modern Academic · Option A",
-  "settingsIdentityStyleTitle": "Campus Identity"
+  "settingsIdentityWayfinding": "Campus-Leitsystem · Option B",
+  "settingsIdentityAcademic": "Modern akademisch · Option A",
+  "settingsIdentityStyleTitle": "Campus-Design"
 }

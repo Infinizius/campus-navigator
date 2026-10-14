@@ -214,7 +214,7 @@
   "settingsHistoryActionSuccess": "历史记录已清除。",
   "settingsHistoryActionFailure": "无法清除历史记录，请重试。",
   "settingsSaveFailure": "无法保存设置，请重试。",
-  "settingsRestoreDefaultsDescription": "使用设备主题和语言、自动校园地图样式，以及 Campus Identity 方案 A？",
+  "settingsRestoreDefaultsDescription": "使用设备主题和语言、自动校园地图样式，并将校园设计恢复为现代学术风格（方案 A）？",
   "settingsCacheBytesUnit": "B",
   "settingsCacheKilobytesUnit": "KB",
   "settingsCacheMegabytesUnit": "MB",
@@ -224,7 +224,7 @@
   "settingsShowPassword": "显示密码",
   "settingsHidePassword": "隐藏密码",
   "settingsCredentialsLoadFailure": "无法加载已保存的登录设置，编辑已暂停。",
-  "settingsIdentityStyleTitle": "Campus Identity",
-  "settingsIdentityAcademic": "Modern Academic · 方案 A",
-  "settingsIdentityWayfinding": "Campus Wayfinding · 方案 B"
+  "settingsIdentityStyleTitle": "校园设计",
+  "settingsIdentityAcademic": "现代学术风格 · 方案 A",
+  "settingsIdentityWayfinding": "校园导视 · 方案 B"
 }
