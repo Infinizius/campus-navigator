@@ -1,8 +1,6 @@
 # Campus Navigator – Release Candidate QA
 
-**Candidate:** `v0.1.0-rc1`  
-**Branch:** `release/qa-2026-10-14`  
-**Test date:** 2026-10-14  
+**Candidate:** `v0.1.0-rc1` · **Branch:** `release/qa-2026-10-14` · **Test date:** 2026-10-14
 **Stable branch:** `master` remained at `0441326300600ceff155dad0e1b0a89b2d4f3710`.
 
 ## Integration record
