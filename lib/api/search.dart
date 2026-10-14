@@ -26,19 +26,29 @@ class SearchResult {
 
   factory SearchResult.fromJson(Map<String, dynamic> json) {
     return SearchResult(
-      assist: json['assist'],
-      assist2: json['assist2'],
+      assist: json['assist'] is String ? json['assist'] as String : '',
+      assist2: json['assist2'] is String ? json['assist2'] as String : '',
       resultsBuildings: SearchResultObject.listFromJson(json['results_geb']),
       resultsRooms: SearchResultObject.listFromJson(json['results_raum']),
-      moreBuildings: json['more_geb'],
-      moreRooms: json['more_raum'],
-      trenn: json['trenn'],
+      moreBuildings: json['more_geb'] == true,
+      moreRooms: json['more_raum'] == true,
+      trenn: json['trenn'] is num ? (json['trenn'] as num).toInt() : 0,
     );
   }
 
   static Future<SearchResult> searchRoom(String query) async {
+    return _request({'query': query, 'from': '/', 'geocode': '1'});
+  }
+
+  /// Matches the TU Campus Navigator's "Erweiterte Suche" request. The
+  /// suggestion endpoint may set more_raum/more_geb and expects a separate
+  /// fullresults request to return the complete match list.
+  static Future<SearchResult> searchAll(String query) async {
+    return _request({'query': query, 'fullresults': '1', 'roomtype': ''});
+  }
+
+  static Future<SearchResult> _request(Map<String, String> map) async {
     final uri = Uri.parse('$baseURL/search');
-    var map = {'query': query, 'from': "/", 'geocode': '1'};
 
     final api = APIServices.Shared;
     final body = await api.cachedStringRequest(uri,
@@ -62,28 +72,49 @@ class SearchResultObject {
   final String name;
   final String? subName;
   final String identifier;
+  final String? detail;
 
   const SearchResultObject({
     required this.name,
     required this.subName,
     required this.identifier,
+    this.detail,
   });
 
   factory SearchResultObject.fromJson(List<dynamic> json) {
-    final nameMatches = roomResultExp.firstMatch(json[0] as String)!;
-    final name = nameMatches[1]!.trim();
-    final subName = nameMatches[3];
+    if (json.length < 2 || json[0] is! String || json[1] is! String) {
+      throw const FormatException('Invalid search result');
+    }
+    final rawName = json[0] as String;
+    final nameMatches = roomResultExp.firstMatch(rawName);
+    final name = (nameMatches?[1] ?? rawName).trim();
+    final subName = nameMatches?[3];
+    final detail = json.length > 2 && json[2] is String
+        ? (json[2] as String).trim()
+        : null;
+    if (name.isEmpty || (json[1] as String).isEmpty) {
+      throw const FormatException('Empty search result');
+    }
 
     return SearchResultObject(
       name: name,
       subName: subName,
-      identifier: json[1],
+      identifier: json[1] as String,
+      detail: detail == null || detail.isEmpty ? null : detail,
     );
   }
 
-  static listFromJson(List<dynamic> json) {
-    return json
-        .map((jsonEntry) => SearchResultObject.fromJson(jsonEntry))
-        .toList();
+  static List<SearchResultObject> listFromJson(dynamic json) {
+    if (json is! List) return const [];
+    final results = <SearchResultObject>[];
+    for (final entry in json) {
+      if (entry is! List) continue;
+      try {
+        results.add(SearchResultObject.fromJson(entry));
+      } on FormatException {
+        // Ignore one malformed server record without discarding valid rooms.
+      }
+    }
+    return results;
   }
 }

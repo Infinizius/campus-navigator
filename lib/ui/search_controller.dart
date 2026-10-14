@@ -7,6 +7,7 @@ import '../api/storage.dart';
 
 class RoomSearchController extends ChangeNotifier {
   final Future<SearchResult> Function(String) _search;
+  final Future<SearchResult> Function(String) _searchAll;
   final bool prefetch;
   Timer? _debounce;
   int _revision = 0;
@@ -15,10 +16,14 @@ class RoomSearchController extends ChangeNotifier {
   SearchResult? result;
   bool loading = false;
   bool failed = false;
+  bool fullSearchFailed = false;
 
   RoomSearchController(
-      {Future<SearchResult> Function(String)? search, this.prefetch = true})
-      : _search = search ?? SearchResult.searchRoom;
+      {Future<SearchResult> Function(String)? search,
+      Future<SearchResult> Function(String)? searchAll,
+      this.prefetch = true})
+      : _search = search ?? SearchResult.searchRoom,
+        _searchAll = searchAll ?? SearchResult.searchAll;
 
   void change(String value, {bool immediately = false}) {
     _debounce?.cancel();
@@ -26,6 +31,7 @@ class RoomSearchController extends ChangeNotifier {
     query = value.trim();
     result = null;
     failed = false;
+    fullSearchFailed = false;
     loading = query.isNotEmpty;
     notifyListeners();
     if (query.isEmpty) return;
@@ -46,6 +52,10 @@ class RoomSearchController extends ChangeNotifier {
       result = results;
       loading = false;
       notifyListeners();
+      if (results.moreRooms || results.moreBuildings) {
+        await loadAllResults();
+        if (!_current(revision)) return;
+      }
       if (!prefetch) return;
       final setting = await APIServices.Shared.storage.getPrefetchingLevel();
       final count = setting == PrefetchingLevel.allResults
@@ -66,6 +76,28 @@ class RoomSearchController extends ChangeNotifier {
   }
 
   void retry() => change(query, immediately: true);
+
+  Future<void> loadAllResults() async {
+    final revision = _revision;
+    if (query.isEmpty || result == null || loading || _disposed) return;
+    loading = true;
+    fullSearchFailed = false;
+    notifyListeners();
+    try {
+      final results = await _searchAll(query);
+      if (!_current(revision)) return;
+      result = results;
+      loading = false;
+      fullSearchFailed = false;
+      notifyListeners();
+    } catch (_) {
+      if (!_current(revision)) return;
+      // Keep the initial suggestions usable and let the user retry the full list.
+      loading = false;
+      fullSearchFailed = true;
+      notifyListeners();
+    }
+  }
 
   @override
   void dispose() {

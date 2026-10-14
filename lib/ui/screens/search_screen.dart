@@ -1,6 +1,7 @@
 import 'package:campus_navigator/api/building/building_page_data.dart';
 import 'package:campus_navigator/api/place_navigation.dart';
 import 'package:campus_navigator/api/saved_places.dart';
+import 'package:campus_navigator/api/search.dart';
 import 'package:campus_navigator/ui/search_controller.dart';
 import 'package:flutter/material.dart';
 import 'building_screen.dart';
@@ -124,33 +125,38 @@ class _SearchScreenState extends State<SearchScreen> {
             onPressed: enabled ? () => _toggle(place) : null));
   }
 
-  Widget _entry(SavedPlace place, {String section = 'result'}) => ListTile(
-      key: ValueKey('place-$section-${place.key}'),
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(
-          place.kind == PlaceKind.room
-              ? Icons.meeting_room_outlined
-              : Icons.business_outlined,
-          color: Theme.of(context).colorScheme.onSurfaceVariant),
-      title: Text(place.name, maxLines: 2, overflow: TextOverflow.ellipsis),
-      subtitle: Text(
-          place.kind == PlaceKind.room
-              ? '${place.buildingCode.toUpperCase()} · ${_t('Etage', 'Floor')} ${place.floor}'
-                  '${place.subName == null ? '' : ' · ${place.subName}'}'
-              : '${place.buildingCode.toUpperCase()} · ${_t('Gebäude', 'Building')}',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis),
-      trailing: _opening == place.key
-          ? const SizedBox(
-              width: 48,
-              height: 48,
-              child: Center(
-                  child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2))))
-          : _favoriteButton(place),
-      onTap: _opening == null ? () => _open(place) : null);
+  Widget _entry(SavedPlace place,
+          {String section = 'result', String? detail}) =>
+      ListTile(
+          key: ValueKey('place-$section-${place.key}'),
+          contentPadding: EdgeInsets.zero,
+          leading: Icon(
+              place.kind == PlaceKind.room
+                  ? Icons.meeting_room_outlined
+                  : Icons.business_outlined,
+              color: Theme.of(context).colorScheme.onSurfaceVariant),
+          title: Text(place.name, maxLines: 2, overflow: TextOverflow.ellipsis),
+          subtitle: Text(
+              place.kind == PlaceKind.room
+                  ? [
+                      if (detail != null && detail.isNotEmpty) detail,
+                      '${place.buildingCode.toUpperCase()} · ${_t('Etage', 'Floor')} ${place.floor}',
+                      if (place.subName != null) place.subName!,
+                    ].join(' · ')
+                  : '${place.buildingCode.toUpperCase()} · ${_t('Gebäude', 'Building')}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis),
+          trailing: _opening == place.key
+              ? const SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: Center(
+                      child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2))))
+              : _favoriteButton(place),
+          onTap: _opening == null ? () => _open(place) : null);
 
   Widget _heading(String text, {Widget? action}) => Padding(
       padding: const EdgeInsets.only(top: 12, bottom: 4),
@@ -218,10 +224,11 @@ class _SearchScreenState extends State<SearchScreen> {
   List<Widget> _results() {
     final result = _search.result;
     final rooms = result?.resultsRooms
-            .map((e) => SavedPlace.tryFromSearch(e, PlaceKind.room))
-            .whereType<SavedPlace>()
+            .map((e) =>
+                (place: SavedPlace.tryFromSearch(e, PlaceKind.room), result: e))
+            .where((entry) => entry.place != null)
             .toList() ??
-        <SavedPlace>[];
+        <({SavedPlace? place, SearchResultObject result})>[];
     final buildings = result?.resultsBuildings
             .map((e) => SavedPlace.tryFromSearch(e, PlaceKind.building))
             .whereType<SavedPlace>()
@@ -248,7 +255,8 @@ class _SearchScreenState extends State<SearchScreen> {
           Text(result.assist, style: Theme.of(context).textTheme.bodySmall),
         if (rooms.isNotEmpty) ...[
           _heading(_t('Räume', 'Rooms')),
-          ...rooms.map(_entry),
+          ...rooms.map(
+              (entry) => _entry(entry.place!, detail: entry.result.detail)),
         ],
         if (buildings.isNotEmpty) ...[
           _heading(_t('Gebäude', 'Buildings')),
@@ -260,10 +268,26 @@ class _SearchScreenState extends State<SearchScreen> {
                   'No results. Enter a building and room number, e.g. BEY 318.'),
               Icons.search_off),
         if (result.moreRooms || result.moreBuildings)
-          Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Text(_t('Suche eingrenzen, um weitere Treffer zu finden.',
-                  'Refine your search to find more results.'))),
+          Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                  key: const ValueKey('load-all-search-results'),
+                  onPressed: _search.loading ? null : _search.loadAllResults,
+                  icon: _search.loading
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2))
+                      : Icon(_search.fullSearchFailed
+                          ? Icons.refresh
+                          : Icons.expand_more),
+                  label: Text(_search.loading
+                      ? _t('Alle Treffer werden geladen …',
+                          'Loading all results …')
+                      : _search.fullSearchFailed
+                          ? _t(
+                              'Vollsuche erneut versuchen', 'Retry full search')
+                          : _t('Alle Treffer anzeigen', 'Show all results')))),
       ],
     ];
   }
