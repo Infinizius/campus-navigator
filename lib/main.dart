@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-import 'ui/screens/search_screen.dart';
+import 'ui/screens/home_screen.dart';
 import 'ui/styling.dart';
 
 void main() {
@@ -21,7 +21,7 @@ class MyApp extends StatelessWidget {
       theme: AppTheme.themeData(AppTheme.lightColorScheme),
       darkTheme: AppTheme.themeData(AppTheme.darkColorScheme),
       debugShowCheckedModeBanner: false,
-      home: const SearchScreen(),
+      home: const HomeScreen(),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: const [Locale('en'), Locale('de')],
     );

@@ -32,12 +32,9 @@ String buildingFloorQuery(String html, String code) {
 }
 
 Future<BuildingPageData> loadSavedPlace(SavedPlace place) async {
-  var query = place.identifier;
+  final query = place.identifier;
   if (place.kind == PlaceKind.building) {
-    final body = await APIServices.Shared.fetchHMTL(
-        Uri.parse('$baseURL/gebaeude/${place.buildingCode}'));
-    if (body == null) throw const FormatException('Building unavailable');
-    query = buildingFloorQuery(body, place.buildingCode);
+    return loadBuildingFloor(place.buildingCode);
   }
   final data = await BuildingPageData.fetchQuery(query);
   if (place.kind == PlaceKind.room && data.selectedRoom?.id != place.roomId) {
@@ -45,4 +42,16 @@ Future<BuildingPageData> loadSavedPlace(SavedPlace place) async {
     throw const FormatException('Room identity no longer available');
   }
   return data;
+}
+
+/// Both search/favorites and the geographic catalog use the same floor resolver.
+/// The campus API exposes building codes, but no search-region identifiers.
+Future<BuildingPageData> loadBuildingFloor(String code) async {
+  if (!RegExp(r'^[a-z0-9_-]+$').hasMatch(code)) {
+    throw const FormatException('Invalid building code');
+  }
+  final body =
+      await APIServices.Shared.fetchHMTL(Uri.parse('$baseURL/gebaeude/$code'));
+  if (body == null) throw const FormatException('Building unavailable');
+  return BuildingPageData.fetchQuery(buildingFloorQuery(body, code));
 }

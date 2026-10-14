@@ -5,7 +5,6 @@ import 'package:campus_navigator/ui/search_controller.dart';
 import 'package:flutter/material.dart';
 import 'building_screen.dart';
 import 'freeroom_search_screen.dart';
-import 'location_screen.dart';
 import 'settings_screen.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -285,13 +284,6 @@ class _SearchScreenState extends State<SearchScreen> {
                 context,
                 MaterialPageRoute(
                     builder: (_) => const FreeroomSearchScreen()))),
-        IconButton(
-            icon: const Icon(Icons.location_on),
-            tooltip: _t('Standort', 'Location'),
-            onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => const LocationScreen(name: 'Location')))),
       ]),
       body: SafeArea(
           child: Center(
