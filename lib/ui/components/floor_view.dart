@@ -119,11 +119,13 @@ class _FloorViewState extends State<FloorView> {
         Positioned(
             right: 8,
             bottom: 8,
-            child: IconButton.filledTonal(
+            child: Semantics(label: localizations?.floorFit ?? 'Entire floor',
+              button: true, onTap: _reset, excludeSemantics: true,
+              child: IconButton.filledTonal(
               tooltip: localizations?.floorFit ?? 'Entire floor',
               onPressed: _reset,
               icon: const Icon(Icons.fit_screen),
-            )),
+            ))),
         if (widget.data.backgroundImageData != null)
           Positioned(
               left: 8,

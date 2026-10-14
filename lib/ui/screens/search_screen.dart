@@ -324,17 +324,17 @@ class _SearchScreenState extends State<SearchScreen> {
           title: const Text('Campus Navigator',
               maxLines: 1, overflow: TextOverflow.ellipsis),
           actions: [
-            IconButton(
+            CampusActionButton(
                 icon: const Icon(Icons.settings),
-                tooltip: _l.settingsScreen_Title,
+                label: _l.settingsScreen_Title,
                 onPressed: () => Navigator.push(
                     context,
                     MaterialPageRoute(
                         builder: (_) => SettingsScreen(places: _places)))),
-            IconButton(
+            CampusActionButton(
                 icon:
                     const Badge(smallSize: 6, child: Icon(Icons.meeting_room)),
-                tooltip: _l.freeRoomExperimental,
+                label: _l.freeRoomExperimental,
                 onPressed: () => Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -358,8 +358,8 @@ class _SearchScreenState extends State<SearchScreen> {
                                 border: const OutlineInputBorder(),
                                 suffixIcon: _textController.text.isEmpty
                                     ? null
-                                    : IconButton(
-                                        tooltip: _l.clearSearch,
+                                    : CampusActionButton(
+                                        label: _l.clearSearch,
                                         icon: const Icon(Icons.close),
                                         onPressed: () {
                                           _textController.clear();

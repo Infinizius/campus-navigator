@@ -100,3 +100,23 @@ class BuildingCodeBadge extends StatelessWidget {
     ));
   }
 }
+
+/// Explicit action semantics also reach Android's accessibility hierarchy.
+class CampusActionButton extends StatelessWidget {
+  const CampusActionButton(
+      {super.key,
+      required this.label,
+      required this.icon,
+      required this.onPressed});
+  final String label;
+  final Widget icon;
+  final VoidCallback? onPressed;
+  @override
+  Widget build(BuildContext context) => Semantics(
+      label: label,
+      button: true,
+      enabled: onPressed != null,
+      onTap: onPressed,
+      excludeSemantics: true,
+      child: IconButton(tooltip: label, icon: icon, onPressed: onPressed));
+}

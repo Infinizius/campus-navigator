@@ -303,8 +303,8 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
                                     color:
                                         Theme.of(context).colorScheme.primary)),
                       const Spacer(),
-                      IconButton(
-                          tooltip: _l.mapCloseSelection,
+                      CampusActionButton(
+                          label: _l.mapCloseSelection,
                           onPressed: () => setState(() => _selected = null),
                           icon: const Icon(Icons.close))
                     ]),
@@ -512,8 +512,8 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
               borderRadius: BorderRadius.circular(8),
               side: BorderSide(
                   color: Theme.of(context).colorScheme.outlineVariant)),
-          child:
-              IconButton(tooltip: label, onPressed: action, icon: Icon(icon)));
+          child: CampusActionButton(
+              label: label, onPressed: action, icon: Icon(icon)));
 
   Widget _content(BuildContext context, bool dark) {
     // Read above this Scaffold: its resized body removes the keyboard inset.
@@ -528,8 +528,8 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
             .toList();
     return Scaffold(
         appBar: AppBar(title: Text(_l.settingsMapThemeTitle), actions: [
-          IconButton(
-              tooltip: _l.mapStyle,
+          CampusActionButton(
+              label: _l.mapStyle,
               onPressed: () {
                 final settings = AppSettingsScope.maybeOf(context);
                 if (settings == null) {
@@ -544,8 +544,8 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
               },
               icon: Icon(
                   dark ? Icons.light_mode_outlined : Icons.dark_mode_outlined)),
-          IconButton(
-              tooltip: _l.mapRefresh,
+          CampusActionButton(
+              label: _l.mapRefresh,
               onPressed:
                   _catalog.busy ? null : () => _catalog.load(refresh: true),
               icon: const Icon(Icons.refresh)),
@@ -568,8 +568,8 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
                           border: const OutlineInputBorder(),
                           suffixIcon: _query.isEmpty
                               ? null
-                              : IconButton(
-                                  tooltip: _l.clearSearch,
+                              : CampusActionButton(
+                                  label: _l.clearSearch,
                                   icon: const Icon(Icons.close),
                                   onPressed: () {
                                     _search.clear();

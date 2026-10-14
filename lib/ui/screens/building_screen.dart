@@ -300,9 +300,9 @@ class _BuildingScreenState extends State<BuildingScreen> {
               Text(widget.name, maxLines: 1, overflow: TextOverflow.ellipsis),
           actions: [
             if (widget.favoriteAction != null) widget.favoriteAction!,
-            IconButton(
+            CampusActionButton(
                 icon: const Icon(Icons.share),
-                tooltip: localizations.roomShare,
+                label: localizations.roomShare,
                 onPressed: () async {
                   final data = await widget.room;
                   if (!mounted) return;
