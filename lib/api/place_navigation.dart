@@ -47,7 +47,7 @@ Future<BuildingPageData> loadSavedPlace(SavedPlace place) async {
 /// Both search/favorites and the geographic catalog use the same floor resolver.
 /// The campus API exposes building codes, but no search-region identifiers.
 Future<BuildingPageData> loadBuildingFloor(String code) async {
-  if (!RegExp(r'^[a-z0-9_-]+$').hasMatch(code)) {
+  if (!RegExp(r'^[a-z0-9äöüß_-]+$').hasMatch(code)) {
     throw const FormatException('Invalid building code');
   }
   final body =

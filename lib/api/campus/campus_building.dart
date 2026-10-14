@@ -19,7 +19,7 @@ class CampusFeature {
     final code = value['krz'];
     final name = value['name'];
     if (code is! String ||
-        !RegExp(r'^[A-Za-z0-9_-]{1,20}$').hasMatch(code) ||
+        !RegExp(r'^[A-Za-z0-9ÄÖÜäöüß_-]{1,20}$').hasMatch(code) ||
         name is! String ||
         name.trim().isEmpty) return null;
     final outlines = <List<LatLng>>[];

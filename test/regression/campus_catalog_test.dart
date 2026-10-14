@@ -101,6 +101,15 @@ void main() {
     expect(apb.routeUri.queryParameters.containsKey('origin'), isFalse);
   });
 
+  test('German building codes are retained exactly, never transliterated', () {
+    final record = (jsonDecode(fixture) as List).first as Map;
+    for (final code in ['GÖR', 'MÜL', 'HÜL', 'DÜR', 'WÜR']) {
+      final feature = CampusFeature.fromJson({...record, 'krz': code})!;
+      expect(feature.code, code);
+      expect(feature.floorCode, code.toLowerCase());
+    }
+  });
+
   CampusCatalog catalog(
           {Future<CachedCampusData?> Function()? read,
           Future<String> Function()? fetch,
