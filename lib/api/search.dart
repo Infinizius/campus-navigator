@@ -36,9 +36,11 @@ class SearchResult {
     );
   }
 
-  static Future<SearchResult> searchRoom(String query) async {
-    final initial =
-        await _request({'query': query, 'from': '/', 'geocode': '1'});
+  static Future<SearchResult> searchRoom(String query,
+      {BaseAPIServices? services}) async {
+    final initial = await _request(
+        {'query': query, 'from': '/', 'geocode': '1'},
+        services: services);
     if (initial.resultsBuildings.isNotEmpty ||
         initial.resultsRooms.isNotEmpty ||
         initial.moreBuildings ||
@@ -49,8 +51,9 @@ class SearchResult {
     final alternate = _separateGluedBau(query);
     if (alternate == null) return initial;
     try {
-      final result =
-          await _request({'query': alternate, 'from': '/', 'geocode': '1'});
+      final result = await _request(
+          {'query': alternate, 'from': '/', 'geocode': '1'},
+          services: services);
       return result.resultsBuildings.isNotEmpty ||
               result.resultsRooms.isNotEmpty
           ? result
@@ -64,12 +67,13 @@ class SearchResult {
   /// Matches the TU Campus Navigator's "Erweiterte Suche" request. The
   /// suggestion endpoint may set more_raum/more_geb and expects a separate
   /// fullresults request to return the complete match list.
-  static Future<SearchResult> searchAll(String query) async {
+  static Future<SearchResult> searchAll(String query,
+      {BaseAPIServices? services}) async {
     return _request({
       'query': _separateGluedBau(query) ?? query,
       'fullresults': '1',
       'roomtype': ''
-    });
+    }, services: services);
   }
 
   /// The TU search tokenizes the German compound suffix "Bau", but does not
@@ -84,10 +88,11 @@ class SearchResult {
     return '${match.group(1)} Bau';
   }
 
-  static Future<SearchResult> _request(Map<String, String> map) async {
+  static Future<SearchResult> _request(Map<String, String> map,
+      {BaseAPIServices? services}) async {
     final uri = Uri.parse('$baseURL/search');
 
-    final api = APIServices.Shared;
+    final api = services ?? APIServices.Shared;
     final body = await api.cachedStringRequest(uri,
         cacheKey: '${uri.toString()} - ${jsonEncode(map)}',
         fileExtension: 'json',

@@ -16,4 +16,7 @@ class StorageMock extends Storage {
     // TODO: implement getUniversity
     return Future(() => UserUniversity.TUD);
   }
+
+  @override
+  Future<CacheDuration> getCacheDuration() async => CacheDuration.day;
 }

@@ -1,10 +1,15 @@
 // ignore_for_file: must_be_immutable
 
+import 'dart:async';
+
 import 'package:campus_navigator/api/api_services.dart';
 import 'package:campus_navigator/api/building/building_page_data.dart';
 import 'package:campus_navigator/api/building/parsing/building_levels.dart';
+import 'package:campus_navigator/api/building/room_details.dart';
+import 'package:campus_navigator/api/building/room_details_service.dart';
 import 'package:campus_navigator/api/building/roomOccupancyPlan.dart';
 import 'package:campus_navigator/api/networking.dart';
+import 'package:campus_navigator/api/saved_places.dart';
 import 'package:campus_navigator/ui/components/adress_section_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -16,16 +21,25 @@ import '../../api/storage.dart';
 import '../components/bottom_sheet_view.dart';
 import '../components/floor_view.dart';
 import '../components/occupancyTableView.dart';
+import '../components/room_details_view.dart';
 import '../campus_identity.dart';
 import '../styling.dart';
 
 class BuildingScreen extends StatefulWidget {
   BuildingScreen(
-      {super.key, required this.room, required this.name, this.favoriteAction});
+      {super.key,
+      required this.room,
+      required this.name,
+      this.favoriteAction,
+      this.places,
+      this.loadRoomDetails});
 
   Future<BuildingPageData> room;
   final String name;
   final Widget? favoriteAction;
+  final PlaceStore? places;
+  final Future<RoomDetails> Function(String roomId, String locale)?
+      loadRoomDetails;
 
   @override
   State<BuildingScreen> createState() => _BuildingScreenState();
@@ -42,9 +56,12 @@ class _BuildingScreenState extends State<BuildingScreen> {
   String? _originalLevel;
   final List<Future<BuildingPageData>> _ownedPages = [];
   Set<layerFilterOptions> selectedFilters = {};
+  Future<RoomDetails>? _roomDetailsFuture;
+  String? _roomDetailsRequestKey;
 
   @override
   void dispose() {
+    widget.places?.removeListener(_placesChanged);
     for (final page in _ownedPages) {
       page.then((data) => data.backgroundImageData?.dispose(), onError: (_) {});
     }
@@ -56,6 +73,10 @@ class _BuildingScreenState extends State<BuildingScreen> {
     super.initState();
     selectedFilters = Set.of(APIServices.Shared.storage.filterSet);
     _ownedPages.add(widget.room);
+    widget.places?.addListener(_placesChanged);
+    if (widget.places != null && !widget.places!.ready) {
+      unawaited(widget.places!.load());
+    }
     widget.room.then((room) {
       if (!mounted) return;
       setState(() {
@@ -66,6 +87,111 @@ class _BuildingScreenState extends State<BuildingScreen> {
         isRoomSelected = roomURL != null;
       });
     }, onError: (_) {});
+  }
+
+  void _placesChanged() {
+    if (mounted) setState(() {});
+  }
+
+  void _ensureRoomDetails(String roomId, String locale) {
+    final requestKey = '$roomId|$locale';
+    if (_roomDetailsRequestKey == requestKey) return;
+    _roomDetailsRequestKey = requestKey;
+    _roomDetailsFuture = widget.loadRoomDetails?.call(roomId, locale) ??
+        RoomDetailsService(
+          api: APIServices.Shared,
+          cache: NavigatorRoomDetailsCache(APIServices.Shared),
+        ).load(roomId, locale: locale);
+  }
+
+  Future<void> _toggleRoomFavorite(SavedPlace place, bool favorite) async {
+    final store = widget.places;
+    if (store == null || !store.ready || store.saving) return;
+    if (store.contains(place) == favorite) return;
+    final saved = await store.toggle(place);
+    if (!saved && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(AppLocalizations.of(context)!.favoritesSaveFailed),
+      ));
+    }
+  }
+
+  void _openConnectedRoom(
+      BuildingPageData page, String roomId, String? roomLabel) {
+    final route =
+        RoomDetailsService.routeToConnectedRoom(page.queryParts, roomId);
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => BuildingScreen(
+        room: BuildingPageData.fetchQuery(route.join('/')),
+        name: roomLabel ?? roomId,
+        places: widget.places,
+      ),
+    ));
+  }
+
+  Widget _roomDetailsSection(
+      BuildingPageData page, AppLocalizations localizations, String locale) {
+    final roomId = page.selectedRoom?.id;
+    if (roomId == null || !RegExp(r'^\d{6}\.\d{4}$').hasMatch(roomId)) {
+      return const SizedBox.shrink();
+    }
+    _ensureRoomDetails(roomId, locale);
+    final place = _savedRoom(page, roomId);
+    final store = widget.places;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Divider(),
+        RoomDetailsLoadView(
+          future: _roomDetailsFuture!,
+          loadingLabel: localizations.roomDetails_loading,
+          errorLabel: localizations.roomDetails_error,
+          retryLabel: localizations.roomDetails_retry,
+          onRetry: () => setState(() => _roomDetailsRequestKey = null),
+          builder: (details) => RoomDetailsView(
+            details: details,
+            isFavorite: place != null && store?.contains(place) == true,
+            title:
+                '${localizations.roomDetails_title} · ${details.name.value ?? roomId}',
+            placesLabel: localizations.roomDetails_places,
+            floorLabel: localizations.roomDetails_floor,
+            buildingLabel: localizations.roomDetails_building,
+            buildingPartLabel: localizations.roomDetails_buildingPart,
+            usageLabel: localizations.roomDetails_usage,
+            remarkLabel: localizations.roomDetails_remark,
+            doorplateLabel: localizations.roomDetails_doorplate,
+            connectedRoomsLabel: localizations.roomDetails_connectedRooms,
+            favoriteLabel: localizations.roomDetails_favorite,
+            removeFavoriteLabel: localizations.roomDetails_removeFavorite,
+            onFavoriteChanged:
+                place == null || store == null || !store.ready || store.saving
+                    ? null
+                    : (favorite) => _toggleRoomFavorite(place, favorite),
+            onOpenRoom: (connectedRoomId) {
+              final roomLabel = details.doors
+                  .map((door) => door.otherRoomFor(roomId))
+                  .where((room) => room?.id == connectedRoomId)
+                  .map((room) => room?.room)
+                  .firstOrNull;
+              _openConnectedRoom(page, connectedRoomId, roomLabel);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  SavedPlace? _savedRoom(BuildingPageData page, String roomId) {
+    if (widget.places == null) return null;
+    try {
+      return SavedPlace(
+        kind: PlaceKind.room,
+        identifier: page.queryParts.join('/'),
+        name: widget.name.isEmpty ? roomId : widget.name,
+      );
+    } on FormatException {
+      return null;
+    }
   }
 
   Future<void> loadOccupancyTable(localizations, String currentLocale) async {
@@ -250,6 +376,9 @@ class _BuildingScreenState extends State<BuildingScreen> {
           const Divider(),
           futurify(
               (data) => adressSection(data, localizations, context: context),
+              localizations),
+          futurify(
+              (data) => _roomDetailsSection(data, localizations, currentLocale),
               localizations),
         ],
       );

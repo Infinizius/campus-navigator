@@ -51,6 +51,11 @@ void main() {
               reason: '$tag/$key metadata');
         }
       }
+      if (tag != 'en') {
+        for (final key in ['timetableCalendar', 'timetableUpcoming']) {
+          expect(translated[key], isNot(template[key]), reason: '$tag/$key');
+        }
+      }
     }
     expect(catalog('zh')..remove('@@locale'),
         catalog('zh_Hans')..remove('@@locale'));

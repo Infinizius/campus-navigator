@@ -5,6 +5,7 @@ import 'package:campus_navigator/api/campus/campus_catalog.dart';
 import 'package:campus_navigator/api/campus/campus_location.dart';
 import 'package:campus_navigator/api/campus/campus_tiles.dart';
 import 'package:campus_navigator/api/place_navigation.dart';
+import 'package:campus_navigator/api/saved_places.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -26,6 +27,7 @@ class CampusMapScreen extends StatefulWidget {
   final Future<LatLng> Function()? locate;
   final Future<BuildingPageData> Function(String)? loadFloor;
   final Future<bool> Function(Uri)? launchRoute;
+  final PlaceStore? places;
   const CampusMapScreen(
       {super.key,
       this.active = true,
@@ -33,7 +35,8 @@ class CampusMapScreen extends StatefulWidget {
       this.tiles,
       this.locate,
       this.loadFloor,
-      this.launchRoute});
+      this.launchRoute,
+      this.places});
 
   @override
   State<CampusMapScreen> createState() => _CampusMapScreenState();
@@ -178,7 +181,9 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
           context,
           MaterialPageRoute(
               builder: (_) => BuildingScreen(
-                  room: Future.value(data), name: building.name)));
+                  room: Future.value(data),
+                  name: building.name,
+                  places: widget.places)));
     } on FormatException catch (e) {
       if (mounted) {
         if (e.message == 'No floor plan available') {
@@ -276,77 +281,85 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
                     onPressed: busy ? null : retry, child: Text(_l.tryAgain))
               ])));
 
-  Widget _details(BuildContext context, CampusFeature b, bool wide) => Material(
-      color: Theme.of(context).colorScheme.surface,
-      child: Container(
-          key: const ValueKey('campus-building-details'),
-          constraints: BoxConstraints(maxHeight: wide ? double.infinity : 230),
-          decoration: BoxDecoration(
-              border: Border(
-                  top: BorderSide(
-                      color: Theme.of(context).colorScheme.outlineVariant))),
-          child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 12, 12),
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(children: [
-                      if (CampusIdentity.wayfinding(context))
-                        BuildingCodeBadge(b.code, announceCode: true)
-                      else
-                        Text(b.code,
-                            style: Theme.of(context)
-                                .textTheme
-                                .labelLarge
-                                ?.copyWith(
-                                    color:
-                                        Theme.of(context).colorScheme.primary)),
-                      const Spacer(),
-                      CampusActionButton(
-                          label: _l.mapCloseSelection,
-                          onPressed: () => setState(() => _selected = null),
-                          icon: const Icon(Icons.close))
-                    ]),
-                    Text(b.name,
-                        style: Theme.of(context).textTheme.titleMedium),
-                    if (b.address != null)
-                      Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(b.address!,
-                              style: Theme.of(context).textTheme.bodySmall)),
-                    const SizedBox(height: 12),
-                    Wrap(spacing: 8, runSpacing: 4, children: [
-                      FilledButton.icon(
-                          key: const ValueKey('campus-open-floor'),
-                          onPressed: _opening || _noPlans.contains(b.code)
-                              ? null
-                              : () => _openFloor(b),
-                          icon: _opening
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child:
-                                      CircularProgressIndicator(strokeWidth: 2))
-                              : const Icon(Icons.layers_outlined, size: 18),
-                          label: Text(_noPlans.contains(b.code)
-                              ? _l.mapNoFloorPlan
-                              : _l.mapFloorPlans)),
-                      OutlinedButton.icon(
-                          key: const ValueKey('campus-route'),
-                          onPressed: b.routeUri == null || _routing
-                              ? null
-                              : () => _route(b),
-                          style: OutlinedButton.styleFrom(
-                              minimumSize: const Size(0, 48)),
-                          icon: const Icon(Icons.navigation_outlined, size: 18),
-                          label: Text(_l.mapNavigate)),
-                    ]),
-                    const SizedBox(height: 4),
-                    Text(_l.mapRouteNote,
-                        style: Theme.of(context).textTheme.bodySmall),
-                    if (b.outlines.isEmpty) Text(_l.mapGeometryMissing),
-                  ]))));
+  Widget _details(BuildContext context, CampusFeature b, bool wide) {
+    final compactHeight = MediaQuery.sizeOf(context).height < 500;
+    return Material(
+        color: Theme.of(context).colorScheme.surface,
+        child: Container(
+            key: const ValueKey('campus-building-details'),
+            constraints:
+                BoxConstraints(maxHeight: wide ? double.infinity : 230),
+            decoration: BoxDecoration(
+                border: Border(
+                    top: BorderSide(
+                        color: Theme.of(context).colorScheme.outlineVariant))),
+            child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(16, 8, 12, compactHeight ? 4 : 12),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(children: [
+                        if (CampusIdentity.wayfinding(context))
+                          BuildingCodeBadge(b.code, announceCode: true)
+                        else
+                          Text(b.code,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelLarge
+                                  ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary)),
+                        const Spacer(),
+                        CampusActionButton(
+                            label: _l.mapCloseSelection,
+                            onPressed: () => setState(() => _selected = null),
+                            icon: const Icon(Icons.close))
+                      ]),
+                      Text(b.name,
+                          style: Theme.of(context).textTheme.titleMedium),
+                      if (!compactHeight && b.address != null)
+                        Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(b.address!,
+                                style: Theme.of(context).textTheme.bodySmall)),
+                      SizedBox(height: compactHeight ? 4 : 12),
+                      Wrap(spacing: 8, runSpacing: 4, children: [
+                        FilledButton.icon(
+                            key: const ValueKey('campus-open-floor'),
+                            onPressed: _opening || _noPlans.contains(b.code)
+                                ? null
+                                : () => _openFloor(b),
+                            icon: _opening
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2))
+                                : const Icon(Icons.layers_outlined, size: 18),
+                            label: Text(_noPlans.contains(b.code)
+                                ? _l.mapNoFloorPlan
+                                : _l.mapFloorPlans)),
+                        OutlinedButton.icon(
+                            key: const ValueKey('campus-route'),
+                            onPressed: b.routeUri == null || _routing
+                                ? null
+                                : () => _route(b),
+                            style: OutlinedButton.styleFrom(
+                                minimumSize: const Size(0, 48)),
+                            icon:
+                                const Icon(Icons.navigation_outlined, size: 18),
+                            label: Text(_l.mapNavigate)),
+                      ]),
+                      if (!compactHeight) ...[
+                        const SizedBox(height: 4),
+                        Text(_l.mapRouteNote,
+                            style: Theme.of(context).textTheme.bodySmall),
+                      ],
+                      if (b.outlines.isEmpty) Text(_l.mapGeometryMissing),
+                    ]))));
+  }
 
   Widget _mapView(BuildContext context, bool dark, {bool tools = true}) =>
       LayoutBuilder(
@@ -645,7 +658,8 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
                       : const SizedBox()),
               Expanded(child: LayoutBuilder(builder: (context, bounds) {
                 _focusAfterLayout(keyboardOpen);
-                final wide = bounds.maxWidth >= 840;
+                final wide = bounds.maxWidth >= 840 ||
+                    (bounds.maxWidth >= 700 && bounds.maxHeight < 500);
                 // During keyboard entry the map keeps the available height.
                 final details =
                     _query.isEmpty && _selected != null && !keyboardOpen

@@ -68,6 +68,13 @@
   "navCampus": "Campus map",
   "navTimetable": "Timetable",
   "timetableTitle": "Timetable",
+  "timetableCalendar": "Calendar",
+  "timetableUpcoming": "Upcoming",
+  "timetableEventCount": "Events: {count}",
+  "@timetableEventCount": {
+    "description": "Accessible event count announced by a calendar day.",
+    "placeholders": { "count": { "type": "int" } }
+  },
   "timetableImport": "Import ICS file",
   "timetableToday": "Today",
   "timetableWeek": "This week",
@@ -258,5 +265,19 @@
   "settingsCredentialsLoadFailure": "Saved login settings could not be loaded. Editing is paused.",
   "settingsIdentityWayfinding": "Campus wayfinding · Option B",
   "settingsIdentityAcademic": "Modern academic · Option A",
-  "settingsIdentityStyleTitle": "Campus design"
+  "settingsIdentityStyleTitle": "Campus design",
+  "roomDetails_title": "Room details",
+  "roomDetails_places": "Places",
+  "roomDetails_floor": "Floor",
+  "roomDetails_building": "Building",
+  "roomDetails_buildingPart": "Building part",
+  "roomDetails_usage": "Usage",
+  "roomDetails_remark": "Remark",
+  "roomDetails_doorplate": "Organization unit",
+  "roomDetails_connectedRooms": "Connected rooms",
+  "roomDetails_favorite": "Add to favorites",
+  "roomDetails_removeFavorite": "Remove from favorites",
+  "roomDetails_loading": "Loading room details …",
+  "roomDetails_error": "Room details could not be loaded.",
+  "roomDetails_retry": "Retry"
 }

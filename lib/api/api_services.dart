@@ -14,20 +14,28 @@ abstract class NavigatorCacheManager extends CacheManager
 class APIServices extends BaseAPIServices {
   static APIServices Shared = APIServices();
 
-  APIServices() : super(cacheManager: DefaultCacheManager());
+  APIServices(
+      {http.Client? client, ImageCacheManager? cacheManager, Storage? storage})
+      : super(
+            client: client,
+            cacheManager: cacheManager ?? DefaultCacheManager(),
+            storage: storage);
 
-  APIServices.withoutCache() : super();
+  APIServices.withoutCache({http.Client? client, Storage? storage})
+      : super(client: client, storage: storage);
 }
 
 class BaseAPIServices {
   static const String loginURL = '$baseURL/api/login';
   static const String occupancyPlanURL = '$baseURL/raum';
 
-  http.Client client = http.Client();
+  http.Client client;
   ImageCacheManager? cacheManager;
-  Storage storage = Storage.Shared;
+  Storage storage;
 
-  BaseAPIServices({this.cacheManager});
+  BaseAPIServices({http.Client? client, this.cacheManager, Storage? storage})
+      : client = client ?? http.Client(),
+        storage = storage ?? Storage.Shared;
 
   // Share response bytes, never decoded images: each floor owns its images.
   final Map<String, Future<List<int>?>> pendingImages = {};

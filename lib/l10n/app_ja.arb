@@ -229,6 +229,13 @@
   "settingsIdentityWayfinding": "キャンパス案内 · オプション B",
   "navTimetable": "Timetable",
   "timetableTitle": "Timetable",
+  "timetableCalendar": "カレンダー",
+  "timetableUpcoming": "今後の予定",
+  "timetableEventCount": "予定: {count}",
+  "@timetableEventCount": {
+    "description": "Accessible event count announced by a calendar day.",
+    "placeholders": { "count": { "type": "int" } }
+  },
   "timetableImport": "Import ICS file",
   "timetableToday": "Today",
   "timetableWeek": "This week",
@@ -258,5 +265,19 @@
   "timetableLoadFailed": "Saved timetable could not be loaded. It has not been changed.",
   "timetableRoomUnavailable": "This room could not be verified. Choose a room manually.",
   "timetableRouteUnavailable": "No verified walking route is available for this building.",
-  "timetableRoomCandidates": "Choose the matching campus room"
+  "timetableRoomCandidates": "Choose the matching campus room",
+  "roomDetails_title": "部屋の詳細",
+  "roomDetails_places": "席数",
+  "roomDetails_floor": "階",
+  "roomDetails_building": "建物",
+  "roomDetails_buildingPart": "建物区画",
+  "roomDetails_usage": "用途",
+  "roomDetails_remark": "備考",
+  "roomDetails_doorplate": "組織単位",
+  "roomDetails_connectedRooms": "接続された部屋",
+  "roomDetails_favorite": "お気に入りに追加",
+  "roomDetails_removeFavorite": "お気に入りから削除",
+  "roomDetails_loading": "部屋の詳細を読み込み中…",
+  "roomDetails_error": "部屋の詳細を読み込めませんでした。",
+  "roomDetails_retry": "再試行"
 }

@@ -99,6 +99,7 @@ class _SearchScreenState extends State<SearchScreen> {
               builder: (context) => BuildingScreen(
                   room: Future.value(data),
                   name: place.name,
+                  places: _places,
                   favoriteAction: AnimatedBuilder(
                       animation: _places,
                       builder: (context, _) => _favoriteButton(place)))));

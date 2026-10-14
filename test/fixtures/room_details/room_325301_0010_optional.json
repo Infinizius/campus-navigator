@@ -1,0 +1,43 @@
+{
+  "doors": [
+    {
+      "location": "Point2D.Double[13.728276481854618, 51.030847492302534]",
+      "room1": {
+        "floorLevel": 1,
+        "AOID": {
+          "floorInt": 1,
+          "AOType": "ROOM",
+          "ID": "TU-DD-410-3253-01-0010",
+          "floor": "01",
+          "building": "3253"
+        },
+        "buildingNumber": "3253",
+        "ID": "325301.0010",
+        "floor": "01",
+        "room": "0010",
+        "empty": false
+      },
+      "doorid": "325301O.000074",
+      "room2": {
+        "floorLevel": 1,
+        "AOID": {
+          "floorInt": 1,
+          "AOType": "ROOM",
+          "ID": "TU-DD-410-3253-01-0032",
+          "floor": "01",
+          "building": "3253"
+        },
+        "buildingNumber": "3253",
+        "ID": "325301.0032",
+        "floor": "01",
+        "room": "0032",
+        "empty": false
+      }
+    }
+  ],
+  "routing": false,
+  "accessibility": "de.tud.navigator.api.pojos.RoomAccessibility@2d5762c7",
+  "name": "151",
+  "type": 22,
+  "doorplate": "de.tud.navigator.api.pojos.Doorplate@c0cfaab"
+}

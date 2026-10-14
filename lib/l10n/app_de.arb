@@ -68,6 +68,13 @@
   "navCampus": "Campuskarte",
   "navTimetable": "Stundenplan",
   "timetableTitle": "Stundenplan",
+  "timetableCalendar": "Kalender",
+  "timetableUpcoming": "Demnächst",
+  "timetableEventCount": "Termine: {count}",
+  "@timetableEventCount": {
+    "description": "Accessible event count announced by a calendar day.",
+    "placeholders": { "count": { "type": "int" } }
+  },
   "timetableImport": "ICS-Datei importieren",
   "timetableToday": "Heute",
   "timetableWeek": "Diese Woche",
@@ -258,5 +265,19 @@
   "settingsCredentialsLoadFailure": "Gespeicherte Anmeldeeinstellungen konnten nicht geladen werden. Die Bearbeitung ist pausiert.",
   "settingsIdentityWayfinding": "Campus-Leitsystem · Option B",
   "settingsIdentityAcademic": "Modern akademisch · Option A",
-  "settingsIdentityStyleTitle": "Campus-Design"
+  "settingsIdentityStyleTitle": "Campus-Design",
+  "roomDetails_title": "Raumdetails",
+  "roomDetails_places": "Plätze",
+  "roomDetails_floor": "Etage",
+  "roomDetails_building": "Gebäude",
+  "roomDetails_buildingPart": "Gebäudeteil",
+  "roomDetails_usage": "Nutzung",
+  "roomDetails_remark": "Bemerkung",
+  "roomDetails_doorplate": "Organisationseinheit",
+  "roomDetails_connectedRooms": "Verbundene Räume",
+  "roomDetails_favorite": "Zu Favoriten hinzufügen",
+  "roomDetails_removeFavorite": "Aus Favoriten entfernen",
+  "roomDetails_loading": "Raumdetails werden geladen …",
+  "roomDetails_error": "Raumdetails konnten nicht geladen werden.",
+  "roomDetails_retry": "Erneut versuchen"
 }

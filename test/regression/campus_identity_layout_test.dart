@@ -19,16 +19,18 @@ import 'campus_map_widget_test.dart'
 import 'package:campus_navigator/ui/screens/home_screen.dart';
 import 'package:flutter_map/flutter_map.dart';
 
-Widget layoutApp(Widget home, {double scale = 1}) => MaterialApp(
-    locale: const Locale('de'),
-    supportedLocales: AppLocalizations.supportedLocales,
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
-    theme: CampusIdentity.themeData(Brightness.light),
-    builder: (context, child) => MediaQuery(
-        data: MediaQuery.of(context)
-            .copyWith(textScaler: TextScaler.linear(scale)),
-        child: child!),
-    home: home);
+Widget layoutApp(Widget home,
+        {double scale = 1, Brightness brightness = Brightness.light}) =>
+    MaterialApp(
+        locale: const Locale('de'),
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        theme: CampusIdentity.themeData(brightness),
+        builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: TextScaler.linear(scale)),
+            child: child!),
+        home: home);
 
 void main() {
   testWidgets('compact hub does not reserve button space in a passive heading',
@@ -106,7 +108,8 @@ void main() {
     await tester.tap(find.text('Campuskarte'));
     await tester.pumpAndSettle();
     await choose(tester, 'APB');
-    await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -140));
+    await tester.drag(
+        find.byType(SingleChildScrollView), const Offset(0, -140));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('campus-open-floor')).hitTestable(),
         findsOneWidget);
@@ -118,6 +121,49 @@ void main() {
     places.dispose();
     search.dispose();
   });
+  for (final brightness in [Brightness.light, Brightness.dark]) {
+    testWidgets(
+        'compact landscape keeps building actions beside the map '
+        'in ${brightness.name} theme', (tester) async {
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 2.625;
+      tester.view.viewPadding = const FakeViewPadding(top: 24, bottom: 24);
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetViewPadding);
+      final catalog = fixtureCatalog();
+      final places = MemoryPlaces().create();
+      final search = RoomSearchController(prefetch: false);
+      await tester.pumpWidget(layoutApp(
+          HomeScreen(
+              catalog: catalog,
+              tiles: TestCampusTiles(),
+              places: places,
+              search: search),
+          brightness: brightness));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Campuskarte'));
+      await tester.pumpAndSettle();
+      await choose(tester, 'APB');
+
+      final map = tester.getRect(find.byType(FlutterMap));
+      final details =
+          tester.getRect(find.byKey(const ValueKey('campus-building-details')));
+      expect(details.left, greaterThanOrEqualTo(map.right));
+      expect(tester.getRect(find.byKey(const ValueKey('campus-route'))).bottom,
+          lessThanOrEqualTo(details.bottom));
+      expect(find.byKey(const ValueKey('campus-open-floor')).hitTestable(),
+          findsOneWidget);
+      expect(find.byKey(const ValueKey('campus-route')).hitTestable(),
+          findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      await tester.pumpWidget(const SizedBox());
+      catalog.dispose();
+      places.dispose();
+      search.dispose();
+    });
+  }
   testWidgets('portrait tablet collapsed sheet reserves exactly its header',
       (tester) async {
     tester.view.physicalSize = const Size(800, 1280);

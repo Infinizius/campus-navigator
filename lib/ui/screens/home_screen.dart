@@ -36,12 +36,14 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _timetableVisited = false;
   final _tabsKey = GlobalKey();
   late final CampusCatalog _catalog = widget.catalog ?? CampusCatalog();
+  late final PlaceStore _places = widget.places ?? PlaceStore();
   late final TimetableStore _timetable = widget.timetable ?? TimetableStore();
 
   @override
   void initState() {
     super.initState();
     unawaited(_timetable.load());
+    if (!_places.ready) unawaited(_places.load());
   }
 
   void _select(int index) {
@@ -60,7 +62,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
     final tabs = IndexedStack(key: _tabsKey, index: _index, children: [
       SearchScreen(
-        places: widget.places,
+        places: _places,
         search: widget.search,
         timetable: _timetable,
         onTapTimetable: () => _select(2),
@@ -69,13 +71,20 @@ class _HomeScreenState extends State<HomeScreen> {
         TickerMode(
             enabled: _index == 1,
             child: CampusMapScreen(
-                active: _index == 1, catalog: _catalog, tiles: widget.tiles))
+                active: _index == 1,
+                catalog: _catalog,
+                tiles: widget.tiles,
+                places: _places))
       else
         const SizedBox(),
       if (_timetableVisited)
         TickerMode(
           enabled: _index == 2,
-          child: TimetableScreen(store: _timetable, catalog: _catalog),
+          child: TimetableScreen(
+            store: _timetable,
+            catalog: _catalog,
+            places: _places,
+          ),
         )
       else
         const SizedBox(),
@@ -145,6 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     if (widget.catalog == null) _catalog.dispose();
+    if (widget.places == null) _places.dispose();
     if (widget.timetable == null) _timetable.dispose();
     super.dispose();
   }

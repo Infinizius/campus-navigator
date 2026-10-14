@@ -234,6 +234,145 @@ void main() {
     store.dispose();
   });
 
+  testWidgets('monthly_calendar_marks_days_and_selects_day_agenda',
+      (tester) async {
+    final store = await makeStore([
+      event('october-class', 'October class', '20261015T092000'),
+    ]);
+    await pumpScreen(
+      tester,
+      TimetableScreen(store: store, clock: () => DateTime(2026, 10, 14, 8)),
+    );
+
+    expect(
+        find.byKey(const ValueKey('timetable-calendar-grid')), findsOneWidget);
+    expect(find.text('October 2026'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('timetable-day-mark-20261015')),
+      findsOneWidget,
+    );
+    final fifteenth = find.byKey(const ValueKey('timetable-day-20261015'));
+    await tester.ensureVisible(fifteenth);
+    await tester.tap(fifteenth);
+    await tester.pumpAndSettle();
+    expect(find.text('October class'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+    store.dispose();
+  });
+
+  testWidgets('monthly_calendar_navigation_and_today_button_work',
+      (tester) async {
+    final store = await makeStore([
+      event('october-class', 'October class', '20261015T092000'),
+    ]);
+    await pumpScreen(
+      tester,
+      TimetableScreen(store: store, clock: () => DateTime(2026, 10, 14, 8)),
+    );
+
+    await tester.tap(find.byKey(const ValueKey('timetable-month-next')));
+    await tester.pumpAndSettle();
+    expect(find.text('November 2026'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('timetable-go-today')));
+    await tester.pumpAndSettle();
+    expect(find.text('October 2026'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('timetable-month-previous')));
+    await tester.pumpAndSettle();
+    expect(find.text('September 2026'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('timetable-go-today')));
+    await tester.pumpAndSettle();
+    expect(find.text('October 2026'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+    store.dispose();
+  });
+
+  testWidgets('upcoming_view_lists_events_from_today_by_date', (tester) async {
+    final store = await makeStore([
+      event('yesterday', 'Past lecture', '20261013T092000'),
+      event('today', 'Today lecture', '20261014T112000'),
+      event('tomorrow', 'Upcoming lecture', '20261015T092000'),
+    ]);
+    await pumpScreen(
+      tester,
+      TimetableScreen(store: store, clock: () => DateTime(2026, 10, 14, 8)),
+    );
+
+    await tester.tap(find.text('Upcoming'));
+    await tester.pumpAndSettle();
+    expect(
+        find.byKey(const ValueKey('timetable-upcoming-view')), findsOneWidget);
+    expect(find.text('Today lecture'), findsOneWidget);
+    expect(find.text('Upcoming lecture'), findsOneWidget);
+    expect(find.text('Past lecture'), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+    store.dispose();
+  });
+
+  testWidgets('upcoming_view_hides_ended_events_but_keeps_active_events',
+      (tester) async {
+    final store = await makeStore([
+      event('ended-today', 'Ended lecture', '20261014T090000'),
+      event('active-today', 'Active lecture', '20261014T133000'),
+      event('later-today', 'Later lecture', '20261014T150000'),
+    ]);
+    await pumpScreen(
+      tester,
+      TimetableScreen(
+        store: store,
+        clock: () => DateTime.utc(2026, 10, 14, 12),
+      ),
+    );
+
+    await tester.tap(find.text('Upcoming'));
+    await tester.pumpAndSettle();
+    expect(find.text('Ended lecture'), findsNothing);
+    expect(find.text('Active lecture'), findsOneWidget);
+    expect(find.text('Later lecture'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+    store.dispose();
+  });
+
+  testWidgets('calendar day semantics announce date and event count',
+      (tester) async {
+    final semantics = tester.ensureSemantics();
+    final store = await makeStore([
+      event('accessible-class', 'Accessible class', '20261015T092000'),
+    ]);
+    await pumpScreen(
+      tester,
+      TimetableScreen(store: store, clock: () => DateTime(2026, 10, 14, 8)),
+    );
+
+    final day = tester.getSemantics(
+      find.byKey(const ValueKey('timetable-day-20261015')),
+    );
+    expect(day.label, contains('Thursday, October 15, 2026'));
+    expect(day.label, contains('Events: 1'));
+    await tester.pumpWidget(const SizedBox());
+    semantics.dispose();
+    store.dispose();
+  });
+
+  testWidgets('monthly_calendar_uses_two_columns_on_wide_layout',
+      (tester) async {
+    final store = await makeStore([
+      event('wide-class', 'Wide class', '20261015T092000'),
+    ]);
+    tester.view.physicalSize = const Size(1100, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(app(TimetableScreen(
+      store: store,
+      clock: () => DateTime(2026, 10, 14, 8),
+    )));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('timetable-wide-layout')), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+    store.dispose();
+  });
+
   testWidgets('import_uses_ics_picker_and_offers_update_or_replace',
       (tester) async {
     final store = await makeStore([]);
@@ -281,6 +420,35 @@ void main() {
     expect(store.events.single.uid, 'kept');
     expect(
         find.byKey(const ValueKey('timetable-import-replace')), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+    store.dispose();
+  });
+
+  testWidgets('clear_action_requires_confirmation_and_clears_schedule',
+      (tester) async {
+    final store = await makeStore([
+      event('clearable', 'Clearable lecture', '20261014T090000'),
+    ]);
+    await pumpScreen(
+      tester,
+      TimetableScreen(store: store, clock: () => DateTime(2026, 10, 14, 8)),
+    );
+
+    await tester.tap(find.byType(PopupMenuButton<String>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Clear timetable'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(store.events, hasLength(1));
+
+    await tester.tap(find.byType(PopupMenuButton<String>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Clear timetable'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Confirm'));
+    await tester.pumpAndSettle();
+    expect(store.events, isEmpty);
     await tester.pumpWidget(const SizedBox());
     store.dispose();
   });

@@ -40,8 +40,13 @@ class HTMLData {
     final document = parse(body);
     final elements =
         document.querySelectorAll('script[type="text/javascript"]');
-    final script =
-        elements.singleWhere((e) => e.innerHtml.length > 1000).innerHtml;
+    final dataScripts =
+        elements.where((e) => e.innerHtml.length > 1000).toList();
+    if (dataScripts.length != 1) {
+      throw FormatException(
+          'Expected one Navigator data script, found ${dataScripts.length}.');
+    }
+    final script = dataScripts.single.innerHtml;
 
     // Parse all variables with JSON object like values
     Map<String, dynamic> declaredVariables =

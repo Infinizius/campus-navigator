@@ -11,8 +11,6 @@ import 'parsing/layer_data.dart';
 import 'parsing/raum_bez_data.dart';
 import 'parsing/room_polygon.dart';
 
-final RegExp raumbezExp = RegExp(r"^raumbezData = ({[^;]+)", multiLine: true);
-
 final RegExp pngFileNameExp =
     RegExp(r'var png_file_name = "(\w+)";', multiLine: true);
 
@@ -59,9 +57,11 @@ class BuildingPageData {
     final buildingInfo = BuildingData.fromHTMLDocument(htmlData.document);
 
     // Parse room labels
-    final raumBezMatch = raumbezExp.firstMatch(htmlData.script)!;
-    RaumBezData raumBezData =
-        RaumBezData.fromJson(jsonDecode(raumBezMatch[1]!));
+    final raumBezJson = htmlData.assignedVariables['raumbezData'];
+    if (raumBezJson is! Map<String, dynamic>) {
+      throw const FormatException('Missing or invalid raumbezData.');
+    }
+    final raumBezData = RaumBezData.fromJson(raumBezJson);
 
     // Parse symbol layers
     List<LayerData> layers = htmlData.declaredVariables.entries
@@ -105,13 +105,19 @@ class BuildingPageData {
             ? int.parse(legacy[1]!)
             : null;
     if (layer != null && index != null) {
-      final polygons =
-          rooms['${layer}Data']?.expand((room) => room.points).toList() ??
-              <List<double>>[];
+      final roomPolygons = rooms['${layer}Data'];
+      if (roomPolygons == null) {
+        throw FormatException('Highlighted room layer "$layer" is missing.');
+      }
+      final polygons = roomPolygons.expand((room) => room.points).toList();
+      if (index < 0 || index >= polygons.length) {
+        throw FormatException(
+            'Highlighted room index $index is outside "$layer".');
+      }
       final info = roomClick['$layer$index'];
       final idMatches =
           requestedId == null || info == null || info[0] == requestedId;
-      if (idMatches && index >= 0 && index < polygons.length) {
+      if (idMatches) {
         final polygon = RoomPolygon(points: [polygons[index]], fill: '#ae0000');
         rooms['highlightedRoom'] = [polygon];
         if (info != null) {

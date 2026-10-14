@@ -229,6 +229,13 @@
   "settingsIdentityWayfinding": "Навигация по кампусу · вариант B",
   "navTimetable": "Timetable",
   "timetableTitle": "Timetable",
+  "timetableCalendar": "Календарь",
+  "timetableUpcoming": "Предстоящие",
+  "timetableEventCount": "События: {count}",
+  "@timetableEventCount": {
+    "description": "Accessible event count announced by a calendar day.",
+    "placeholders": { "count": { "type": "int" } }
+  },
   "timetableImport": "Import ICS file",
   "timetableToday": "Today",
   "timetableWeek": "This week",
@@ -258,5 +265,19 @@
   "timetableLoadFailed": "Saved timetable could not be loaded. It has not been changed.",
   "timetableRoomUnavailable": "This room could not be verified. Choose a room manually.",
   "timetableRouteUnavailable": "No verified walking route is available for this building.",
-  "timetableRoomCandidates": "Choose the matching campus room"
+  "timetableRoomCandidates": "Choose the matching campus room",
+  "roomDetails_title": "Сведения о помещении",
+  "roomDetails_places": "Места",
+  "roomDetails_floor": "Этаж",
+  "roomDetails_building": "Здание",
+  "roomDetails_buildingPart": "Часть здания",
+  "roomDetails_usage": "Назначение",
+  "roomDetails_remark": "Примечание",
+  "roomDetails_doorplate": "Организационная единица",
+  "roomDetails_connectedRooms": "Связанные помещения",
+  "roomDetails_favorite": "Добавить в избранное",
+  "roomDetails_removeFavorite": "Удалить из избранного",
+  "roomDetails_loading": "Загрузка сведений о помещении…",
+  "roomDetails_error": "Не удалось загрузить сведения о помещении.",
+  "roomDetails_retry": "Повторить"
 }

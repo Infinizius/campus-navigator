@@ -229,6 +229,13 @@
   "settingsCredentialsLoadFailure": "Impossibile caricare le credenziali salvate. La modifica è sospesa.",
   "navTimetable": "Timetable",
   "timetableTitle": "Timetable",
+  "timetableCalendar": "Calendario",
+  "timetableUpcoming": "In programma",
+  "timetableEventCount": "Eventi: {count}",
+  "@timetableEventCount": {
+    "description": "Accessible event count announced by a calendar day.",
+    "placeholders": { "count": { "type": "int" } }
+  },
   "timetableImport": "Import ICS file",
   "timetableToday": "Today",
   "timetableWeek": "This week",
@@ -258,5 +265,19 @@
   "timetableLoadFailed": "Saved timetable could not be loaded. It has not been changed.",
   "timetableRoomUnavailable": "This room could not be verified. Choose a room manually.",
   "timetableRouteUnavailable": "No verified walking route is available for this building.",
-  "timetableRoomCandidates": "Choose the matching campus room"
+  "timetableRoomCandidates": "Choose the matching campus room",
+  "roomDetails_title": "Dettagli dell'aula",
+  "roomDetails_places": "Posti",
+  "roomDetails_floor": "Piano",
+  "roomDetails_building": "Edificio",
+  "roomDetails_buildingPart": "Parte dell'edificio",
+  "roomDetails_usage": "Uso",
+  "roomDetails_remark": "Nota",
+  "roomDetails_doorplate": "Unità organizzativa",
+  "roomDetails_connectedRooms": "Aule collegate",
+  "roomDetails_favorite": "Aggiungi ai preferiti",
+  "roomDetails_removeFavorite": "Rimuovi dai preferiti",
+  "roomDetails_loading": "Caricamento dei dettagli dell’aula…",
+  "roomDetails_error": "Impossibile caricare i dettagli dell’aula.",
+  "roomDetails_retry": "Riprova"
 }
