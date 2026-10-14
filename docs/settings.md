@@ -144,3 +144,26 @@ Abhängigkeitslizenzen mit Flutter `showLicensePage` und verweist auf
 OpenStreetMap-Mitwirkende für Kartenkacheln. Die App wird als inoffizielles
 Community-Projekt beschrieben; die Rechte am ursprünglichen AKORA-Code und an
 TU-Grundrissdaten werden ausdrücklich als ungeklärt bezeichnet.
+
+## Android-Nachweis
+
+Die Settings-Branch-APK wurde am Emulator `emulator-5554` im Hochformat
+(1080×1920, 420 dpi) geprüft. Die Auswahl `Dark` und die Sprache `Español`
+blieben nach einem Prozessneustart erhalten. Der Cache fiel beim Leeren von
+20,6 MB auf 0 B; Favoriten und Verlaufseinträge waren danach weiterhin
+vorhanden. Die Bilder liegen unter [`docs/settings-evidence`](settings-evidence/):
+
+- [`settings-main-portrait.png`](settings-evidence/settings-main-portrait.png)
+- [`settings-system-dark.png`](settings-evidence/settings-system-dark.png)
+- [`settings-after-restart.png`](settings-evidence/settings-after-restart.png)
+- [`language-options.png`](settings-evidence/language-options.png)
+- [`data-cache.png`](settings-evidence/data-cache.png)
+- [`local-data-actions.png`](settings-evidence/local-data-actions.png)
+- [`clear-cache-dialog.png`](settings-evidence/clear-cache-dialog.png)
+- [`cache-cleared.png`](settings-evidence/cache-cleared.png)
+- [`favorites-after-cache-clear.png`](settings-evidence/favorites-after-cache-clear.png)
+- [`reset-dialog.png`](settings-evidence/reset-dialog.png)
+
+Die Emulatorbilder zeigen den Settings-Branch vor der Root-App-Integration.
+Deshalb weisen sie die Persistenz und die Darstellung des Einstellungsbildschirms
+nach, aber noch keine sofortige Theme- oder Sprachumschaltung der übrigen Screens.
