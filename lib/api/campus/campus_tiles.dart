@@ -23,6 +23,8 @@ class CampusTileProvider extends TileProvider {
               'CampusNavigator/1.2 (+https://github.com/Infinizius/campus-navigator)',
         });
 
+  static Future<void> clearDiskCache() => _cache.emptyCache();
+
   @override
   bool get supportsCancelLoading => true;
 
