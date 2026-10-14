@@ -100,6 +100,10 @@ These screenshots were captured from the Android API 34 emulator at 1080 ×
 - [Google Maps walking destination](timetable-evidence/maps-route.png)
 - [Next-event preview after restarting the app](timetable-evidence/restart.png)
 
+The dark-theme phone capture shows the monthly calendar redesign. The light-theme
+phone capture is from the previous week-strip layout; a fresh light-mode
+emulator capture remains pending.
+
 ## Troubleshooting
 
 - If an import fails, check that the file is UTF-8 iCalendar 2.0 and does not
