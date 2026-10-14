@@ -1,6 +1,6 @@
 # Campus Identity – Gestaltung und Grenzen
 
-14.10.2026 · Phase B · Arbeitsrichtung B (Campus Wayfinding).
+14.10.2026 · Phase B · A als Standard, B umschaltbar (bestätigte Nutzerwahl).
 
 ## Ziel und Gestaltungsrichtung
 
@@ -14,11 +14,11 @@ Raumbezeichnung als Titel, zurückhaltende Abschnittsüberschriften. Gebäudecod
 werden als sachliche Information gezeigt. Vorteil: vertraute, ruhige Android-UI.
 
 **B – Campus Wayfinding:** identische Struktur und Farbwelt; feste, kompakte
-Codeflächen für APB/BEY/BAR; Raumnummer daneben; schmale Kennzeichnung der
-Listenabschnitte; mehr Gebäudekürzel auf der Karte. Vorteil: der Gebäudecode
+Codeflächen für APB/BEY/BAR; vollständige Raumnamen daneben; Kennzeichnung der
+Listenabschnitte. Die vorhandene Karten-Labelbegrenzung bleibt erhalten. Vorteil: der Gebäudecode
 verbindet Suche, Karte und Etagenansicht visuell.
 
-**Empfehlung:** B, falls die zusätzlichen Kartenlabels bei der Sichtprüfung
+**Nutzerentscheidung:** A ist Standard, B bleibt auswählbar. Kartenlabels müssen bei der Sichtprüfung
 lesbar bleiben. Codes dürfen keine Gebäudenamen verdrängen oder bei geringer
 Zoomstufe kollidieren. Im Produkt muss die vorhandene zoomabhängige
 Labelbegrenzung erhalten bleiben. A bleibt die zurückhaltendere Alternative.
@@ -49,7 +49,7 @@ zur Dekoration. Die vorhandene Raumhervorhebung bleibt unverändert.
 
 Roboto/Systemschrift: 20 sp App-Bar, 16 sp Zeilentitel, 14 sp Abschnitt/Inhalt,
 12–13 sp unterstützende Information. 4-/8-dp-Raster; Außenabstand 16 dp;
-Panelbreite Karte 328 dp, Grundriss 300 dp; Radius 4 dp Code, 8 dp Suche/Button.
+Panelbreite Karte 320 dp, Grundriss 300 dp; Radius 4 dp Code, 8 dp Suche/Button.
 Wichtige Ziele mindestens 48 × 48 dp. Textvergrößerung darf keine festen
 Zeilenhöhen erzwingen; lange Gebäude-/Raumnamen erhalten bis zu zwei Zeilen.
 
@@ -67,7 +67,7 @@ Zeilenhöhen erzwingen; lange Gebäude-/Raumnamen erhalten bis zu zwei Zeilen.
   am Smartphone; bestehende 300-dp-Seitenleiste ab 840 dp. Collapsed-Sheet
   anhand realer Inhalts-/Schrifthöhe dimensionieren, nicht pauschal prozentual.
   Grundriss vollständig mit vorhandener Fit-Aktion erreichbar.
-- **Navigation:** bestehende zwei Ziele; ab 840 dp schmale NavigationRail als
+- **Navigation:** bestehende zwei Ziele; ab 1000 dp Gerätebreite schmale NavigationRail als
   prüfbarer Vorschlag. IndexedStack und verzögertes Laden bleiben erhalten.
 
 ## Unveränderliche Bereiche / Integration
@@ -91,6 +91,6 @@ Siehe `docs/ui-evidence/README.md` und Bildordner `identity-a`, `identity-b`.
 Beide Varianten verwenden gleiche Inhalte, Kameras und Gerätegrößen.
 Die Vorschau demonstriert Gestaltung, Scrollen, Tastatur, Kartenzoom und
 unveränderten Grundriss; ihre Datenaktionen sind noch keine Produktfunktion.
-Nach Präsentation wird B als empfohlene Arbeitsrichtung übernommen.
+Nach Präsentation bestätigte der Nutzer A als Standard und wünscht einen Stilwechsel zu B.
 Umsetzung und Integration erfolgen ausschließlich auf
 `feature/ui-refinement`, ohne Merge nach `master`.

@@ -1,5 +1,17 @@
 # Campus Identity – Ausgangsbasis und Entwürfe
 
+## Fertiger Produktstand
+
+Die folgenden Abschnitte dokumentieren die historische Ausgangsanalyse und
+Phase-A-Studie. Die tatsächliche Implementierung und finale Verifikation
+stehen im [Ergebnisbericht](../ui-refinement-results.md), die Produktbilder
+in [Produktvergleich](product-comparison.md). `product/` enthält echte
+Produktansichten; `identity-a/` und `identity-b/` bleiben Designvorschauen.
+
+Finale Suite: 152 bestanden, 26 externe Fixture-Skips. Analyzer: 36 bestehende
+Infos, keine Warnung/Fehler, Exitcode 1. Android-Debug-APK erfolgreich.
+Die Architekturzeichnungspipeline blieb unverändert.
+
 Stand: 14.10.2026. Worktree `campus-ui-refinement`, Branch
 `feature/ui-refinement`, Vergleichs-Commit
 `d5609b07acc386f24446752afa70966112bb680c`.

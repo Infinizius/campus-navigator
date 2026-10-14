@@ -1,9 +1,24 @@
 # Campus Identity / Settings – Integrationsvertrag
 
-Stand 14.10.2026. Designvorschau und Planung sind vorbereitet;
-Produktintegration ist noch nicht umgesetzt. Keine Branches zusammengeführt.
-Zum Schnittstellenabgleich gelesener Settings-Stand: `7bde4ec`
-(`feat(settings): add persistent settings and data controls`).
+Stand 14.10.2026. Produktintegration im UI-Worktree umgesetzt und getestet.
+Keine Branches zusammengeführt, kein Merge/Push. Settings-Abhängigkeiten wurden
+unverändert im eigenen Feature-Branch übernommen:
+
+| Settings-Commit | identischer Cherry-pick im UI-Branch | Inhalt |
+|---|---|---|
+| `7bde4ec` | `33f43cc` | persistente Einstellungen und Datenaktionen |
+| `b6edc03` | `1f51dcb` | Stilwahl A/B, A Standard und Reset |
+| `5fc1e44` | `3159195` | sprachunabhängige Stilwahl im Widget-Test |
+| `83f3e96` | `6413f87` | explizite unterstützte Locale-Skripte |
+
+Produkt-Code: `2178490`, Accessibility: `5ecaf5a`, Stilübersetzungen: `1ebb0fd`.
+Review-Korrekturen: `ee5fd37` (Tabellen, Sheet-Höhe, Querformat-Kartenwerkzeuge).
+Finaler Smartphone-Dichte-Fix: `45ecad4`.
+
+Geprüft: 152 Tests bestanden / 26 externe Fixture-Skips; Analyze 36 bestehende
+Infos ohne Fehler/Warnung (Exitcode 1); Debug-Build erfolgreich. APK:
+`build/campus-navigator-campus-identity-debug.apk`, SHA-256
+`A55C3F7EB7D91EC64825DD7C606A43875FA8006F3E1A9EF77BB7BAA171B3BD4B`.
 
 ## Dateibesitz
 
@@ -18,14 +33,19 @@ Zum Schnittstellenabgleich gelesener Settings-Stand: `7bde4ec`
 `lib/ui/styling.dart` bleibt für die vorhandene Zeichnungspalette zunächst
 unverändert. Painter, Transformationen und Planparser werden nicht bearbeitet.
 Gemeinsame Navigation (`home_screen.dart`) ist eine dokumentierte UI-Änderung.
-Die ausgewählte UI-Palette wird erst nach der A/B-Entscheidung als Produkt-
-Tokendatei angelegt. Settings darf diese danach übernehmen.
+Die UI-Palette ist in `lib/ui/campus_identity.dart` implementiert. Settings
+erbt sie über MaterialApp; keine Änderung seiner Seiten durch den UI-Agenten.
 
 ## Gegen den vorhandenen Settings-Code gelesene Schnittstellen
 
 - `AppSettingsController()`; `Future<void> load()`.
 - `ThemeMode themeMode`, `Locale? locale` (null = Gerätesprache).
 - `CampusMapThemeMode campusMapThemeMode`: automatic/light/dark.
+- `AppCampusIdentityStyle campusIdentityStyle`: academic/wayfinding.
+  `setCampusIdentityStyle(...)` speichert über den Settings-Controller.
+  Academic = A ist Standard und Resetwert. Die Nutzerentscheidung verlangt
+  beide wählbaren Varianten. B zeigt kompakte Gebäudecodes; vollständige
+  Raum-/Gebäudenamen, IDs und die Karten-Labelbegrenzung bleiben erhalten.
 - `static List<Locale> supportedLocales` und
   `static Locale resolveLocale(Locale? locale)` (Fallback Englisch,
   `zh` ohne Script wird `zh-Hans`).
@@ -61,6 +81,7 @@ settingsSaveFailure settingsRestoreDefaultsDescription settingsCacheBytesUnit
 settingsCacheKilobytesUnit settingsCacheMegabytesUnit settingsLocalDataTitle
 settingsLocalDataDescription settingsDataSourcesDescription
 settingsShowPassword settingsHidePassword settingsCredentialsLoadFailure
+settingsIdentityStyleTitle settingsIdentityAcademic settingsIdentityWayfinding
 ```
 
 Letzter Getter: gespeicherte Anmeldeeinstellungen konnten nicht geladen werden;
@@ -72,8 +93,9 @@ Zeichnungen; Herkunft und gegebenenfalls offene Rechtefragen getrennt nennen.
 ## Gemeinsame Prüfung vor späterer Integration
 
 1. Beide Agenten liefern ihre exakten Commit-IDs und einen sauberen Status.
-2. Nutzerkoordiniert beide Änderungen in einer separaten Testkopie prüfen;
-   die Feature-Worktrees unverändert lassen. Keine automatischen Merges.
+2. Nutzerkoordiniert beide Änderungen in einer separaten Testkopie prüfen.
+   Bereits vorhandene identische Settings-Cherry-picks berücksichtigen;
+   nicht blind erneut anwenden. Andere Feature-Worktrees unverändert lassen.
 3. ARB-Generierung/Root/Settings/Kartentheme zusammen prüfen; keine unbuildbare
    Root-Änderung als fertige eigenständige APK deklarieren.
 4. Getestete Commit-Paare, Analyze-/Testausgabe und APK-Hash dokumentieren.
