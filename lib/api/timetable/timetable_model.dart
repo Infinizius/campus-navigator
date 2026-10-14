@@ -23,6 +23,9 @@ class IcsTemporal {
         kind: IcsTemporalKind.values.byName(json['kind'] as String),
         timeZoneId: json['timeZoneId'] as String?,
       );
+
+  static IcsTemporal decode(Object? value) =>
+      IcsTemporal.fromJson(Map<String, Object?>.from(value as Map));
 }
 
 class TimetableOverride {
@@ -56,6 +59,20 @@ class TimetableOverride {
         if (end != null) 'end': end!.toJson(),
         if (duration != null) 'durationSeconds': duration!.inSeconds,
       };
+
+  factory TimetableOverride.fromJson(Map<String, Object?> json) =>
+      TimetableOverride(
+        recurrenceId: IcsTemporal.decode(json['recurrenceId']),
+        cancelled: json['cancelled'] as bool,
+        summary: json['summary'] as String?,
+        description: json['description'] as String?,
+        location: json['location'] as String?,
+        start: json['start'] == null ? null : IcsTemporal.decode(json['start']),
+        end: json['end'] == null ? null : IcsTemporal.decode(json['end']),
+        duration: json['durationSeconds'] == null
+            ? null
+            : Duration(seconds: json['durationSeconds'] as int),
+      );
 }
 
 class TimetableSeries {
@@ -95,6 +112,27 @@ class TimetableSeries {
         'exclusions': exclusions.map((value) => value.toJson()).toList(),
         'overrides': overrides.map((value) => value.toJson()).toList(),
       };
+
+  factory TimetableSeries.fromJson(Map<String, Object?> json) =>
+      TimetableSeries(
+        uid: json['uid'] as String,
+        summary: json['summary'] as String,
+        description: json['description'] as String?,
+        location: json['location'] as String?,
+        start: IcsTemporal.decode(json['start']),
+        end: json['end'] == null ? null : IcsTemporal.decode(json['end']),
+        duration: json['durationSeconds'] == null
+            ? null
+            : Duration(seconds: json['durationSeconds'] as int),
+        recurrenceRule: json['recurrenceRule'] as String?,
+        exclusions: (json['exclusions'] as List<dynamic>)
+            .map(IcsTemporal.decode)
+            .toList(growable: false),
+        overrides: (json['overrides'] as List<dynamic>)
+            .map((value) => TimetableOverride.fromJson(
+                Map<String, Object?>.from(value as Map)))
+            .toList(growable: false),
+      );
 }
 
 class ParsedTimetable {

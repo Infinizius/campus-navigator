@@ -26,7 +26,7 @@ class RoomResolver {
   Future<RoomResolution> resolve(String location) async {
     final query = location.trim();
     if (query.isEmpty) return _unresolved();
-    final normalizedQuery = _normalize(query);
+    final normalizedQuery = normalizeRoomLocation(query);
     try {
       final response = await _search(query);
       final roomMatches = <String, SavedPlace>{};
@@ -84,12 +84,12 @@ class RoomResolver {
 
 Set<String> _aliases(SearchResultObject result) {
   final values = <String>{
-    _normalize(result.name),
-    if (result.subName != null) _normalize(result.subName!),
-    if (result.detail != null) _normalize(result.detail!),
+    normalizeRoomLocation(result.name),
+    if (result.subName != null) normalizeRoomLocation(result.subName!),
+    if (result.detail != null) normalizeRoomLocation(result.detail!),
   };
-  final name = _normalize(result.name);
-  final detail = _normalize(result.detail ?? '');
+  final name = normalizeRoomLocation(result.name);
+  final detail = normalizeRoomLocation(result.detail ?? '');
   if (name.isNotEmpty && detail.isNotEmpty) values.add('$detail$name');
 
   // TU room sub-names use canonical paths such as APB/EG/raum/E069. Their
@@ -97,8 +97,8 @@ Set<String> _aliases(SearchResultObject result) {
   final path = (result.subName ?? result.identifier).split('/');
   final roomMarker = path.indexWhere((part) => part.toLowerCase() == 'raum');
   if (roomMarker > 0 && roomMarker + 1 < path.length) {
-    final building = _normalize(path.first);
-    final room = _normalize(path[roomMarker + 1]);
+    final building = normalizeRoomLocation(path.first);
+    final room = normalizeRoomLocation(path[roomMarker + 1]);
     if (building.isNotEmpty && room.isNotEmpty) {
       values.add('$building$room');
       values.add('$building/$room');
@@ -107,7 +107,7 @@ Set<String> _aliases(SearchResultObject result) {
   return values.where((value) => value.isNotEmpty).toSet();
 }
 
-String _normalize(String value) {
+String normalizeRoomLocation(String value) {
   final folded = value
       .toLowerCase()
       .replaceAll('ä', 'ae')

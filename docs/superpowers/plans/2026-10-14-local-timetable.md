@@ -112,16 +112,16 @@ Expected: failing resolution assertions, with no test-harness errors.
 - Persist a version-1 JSON snapshot at `Timetable.v1` using injected functions and `Storage.Shared.storage` by default.
 - Update merges by UID and retains absent series. It preserves a manual mapping only when normalized LOCATION is unchanged. Replace atomically drops previous events/mappings; clear drops all. Repeated update is idempotent.
 
-- [ ] **Step 1: Write tests** named `round_trips_after_new_store_instance`, `update_upserts_without_duplicates_and_keeps_absent_events`, `replace_discards_old_events_and_mappings`, `preserves_mapping_only_for_unchanged_location`, `clear_removes_all_events_and_mappings`, `failed_import_keeps_committed_snapshot`, and `corrupt_document_is_not_overwritten`.
-- [ ] **Step 2: Run the store tests and confirm expected absent persistence/import behavior.**
+- [x] **Step 1: Write tests** named `round_trips_after_new_store_instance`, `update_upserts_without_duplicates_and_keeps_absent_events`, `replace_discards_old_events_and_mappings`, `preserves_mapping_only_for_unchanged_location`, `clear_removes_all_events_and_mappings`, `failed_import_keeps_committed_snapshot`, and `corrupt_document_is_not_overwritten`.
+- [x] **Step 2: Run the store tests and confirm expected absent persistence/import behavior.**
 
 Run: `. .\tools\dev-env.ps1; $env:DART_SUPPRESS_ANALYTICS='true'; flutter test test/timetable/timetable_store_test.dart --no-pub`
 
 Expected: failing persistence assertions, with no test-harness errors.
 
-- [ ] **Step 3: Implement versioned serialization, queued snapshot commits, update/replace merge semantics, mapping retention, clear, and failure preservation.**
-- [ ] **Step 4: Run the store test file and confirm all seven behaviors pass.**
-- [ ] **Step 5: Commit** as `feat: persist timetable imports locally`.
+- [x] **Step 3: Implement versioned serialization, queued snapshot commits, update/replace merge semantics, mapping retention, clear, and failure preservation.**
+- [x] **Step 4: Run the store test file and confirm all seven behaviors pass.**
+- [x] **Step 5: Commit** as `feat: persist timetable imports locally`.
 
 ### Task 5: Picker flow, timetable screen, navigation and preview
 
