@@ -129,7 +129,11 @@ DTSTART;TZID=Moon/Base:20261014T090000
 DTEND;TZID=Moon/Base:20261014T100000
 SUMMARY:Unknown
 '''))),
-      throwsA(isA<IcsImportException>()),
+      throwsA(isA<IcsImportException>().having(
+        (error) => error.code,
+        'code',
+        IcsImportErrorCode.unknownTimezone,
+      )),
     );
   });
 

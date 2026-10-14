@@ -147,7 +147,7 @@ Expected: failing widget assertions, with no test-harness errors.
 
 - [x] **Step 3: Implement the importer and compact Today/week list, add localized English/German copy, preview, and the minimal Home navigation integration.** Retain the shared catalog lifecycle and keep renderer files unchanged.
 - [x] **Step 4: Run the widget tests plus existing search, navigation, and Campus Identity regression tests; confirm all pass.**
-- [ ] **Step 5: Commit** as `feat: add timetable navigation and preview`.
+- [x] **Step 5: Commit** as `feat: add timetable navigation and preview`.
 
 ### Task 6: Support documentation, full verification and delivery evidence
 
@@ -161,18 +161,18 @@ Expected: failing widget assertions, with no test-harness errors.
 - Capture emulator screenshots showing the timetable/next event in light and dark mode; keep synthetic event titles/locations in screenshots.
 - No API, manifest, floor renderer, or room geometry changes beyond the previously specified integration.
 
-- [ ] **Step 1: Write documentation assertions in `test/timetable/timetable_docs_test.dart`** for supported-feature names, privacy constraints, and unsupported recurrence errors.
-- [ ] **Step 2: Run the docs test and confirm it fails because `docs/timetable.md` is absent.**
+- [x] **Step 1: Write documentation assertions in `test/timetable/timetable_docs_test.dart`** for supported-feature names, privacy constraints, and unsupported recurrence errors.
+- [x] **Step 2: Run the docs test and confirm it fails because `docs/timetable.md` is absent.**
 
 Run: `. .\tools\dev-env.ps1; $env:DART_SUPPRESS_ANALYTICS='true'; flutter test test/timetable/timetable_docs_test.dart --no-pub`
 
 Expected: failing documentation assertions only.
 
-- [ ] **Step 3: Write `docs/timetable.md` from implemented behavior and pass the documentation test.**
-- [ ] **Step 4: Run `flutter analyze` and the complete `flutter test` suite; record all existing and new failures by name.**
-- [ ] **Step 5: Run `flutter build apk --debug`; confirm the APK exists and validate it with `apksigner verify --verbose`.**
-- [ ] **Step 6: Launch the available Android emulator, import a synthetic calendar, check today/week, open a synthetic verified room, check Maps handoff, and capture light/dark screenshots. If ADB remains blocked by the sandbox's socketpair restriction, record exact diagnostics and finish all other checks.**
-- [ ] **Step 7: Commit** as `docs: document timetable import and support`.
+- [x] **Step 3: Write `docs/timetable.md` from implemented behavior and pass the documentation test.**
+- [x] **Step 4: Run `flutter analyze` and the complete `flutter test` suite; record all existing and new failures by name.**
+- [x] **Step 5: Run `flutter build apk --debug`; confirm the APK exists and validate it with `apksigner verify --verbose`.**
+- [x] **Step 6: Launch the available Android emulator, import a synthetic calendar, check today/week, open a synthetic verified room, check Maps handoff, and capture light/dark screenshots. If ADB remains blocked by the sandbox's socketpair restriction, record exact diagnostics and finish all other checks.**
+- [x] **Step 7: Commit** as `docs: document timetable import and support`.
 
 ## Execution Choice
 

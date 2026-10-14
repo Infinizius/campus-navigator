@@ -73,7 +73,7 @@ ParsedTimetable parseIcsCalendar(String input) {
         throw const IcsImportException(IcsImportErrorCode.incompleteEvent);
       }
       final start =
-          parseIcsTemporal(startProperty.value, startProperty.parameters);
+          _parseTemporal(startProperty.value, startProperty.parameters);
       final endProperty = _single(component, 'DTEND');
       final durationProperty = _single(component, 'DURATION');
       if (endProperty != null && durationProperty != null) {
@@ -81,7 +81,7 @@ ParsedTimetable parseIcsCalendar(String input) {
       }
       final end = endProperty == null
           ? null
-          : parseIcsTemporal(endProperty.value, endProperty.parameters);
+          : _parseTemporal(endProperty.value, endProperty.parameters);
       final duration = durationProperty == null
           ? null
           : _parseDuration(durationProperty.value);
@@ -115,8 +115,7 @@ ParsedTimetable parseIcsCalendar(String input) {
         if (range != null) {
           throw const IcsImportException(IcsImportErrorCode.unsupportedFeature);
         }
-        final id =
-            parseIcsTemporal(recurrenceId.value, recurrenceId.parameters);
+        final id = _parseTemporal(recurrenceId.value, recurrenceId.parameters);
         overrides.putIfAbsent(uid, () => []).add(TimetableOverride(
               recurrenceId: id,
               cancelled: cancelled,
@@ -144,7 +143,7 @@ ParsedTimetable parseIcsCalendar(String input) {
           if (date.isEmpty) {
             throw const IcsImportException(IcsImportErrorCode.invalidDate);
           }
-          exclusions.add(parseIcsTemporal(date, property.parameters));
+          exclusions.add(_parseTemporal(date, property.parameters));
         }
       }
       masters[uid] = TimetableSeries(
@@ -189,6 +188,19 @@ ParsedTimetable parseIcsCalendar(String input) {
     throw const IcsImportException(IcsImportErrorCode.invalidDate);
   } catch (_) {
     throw const IcsImportException(IcsImportErrorCode.invalidCalendar);
+  }
+}
+
+IcsTemporal _parseTemporal(String value, Map<String, String> parameters) {
+  final timeZoneId = parameters['TZID'];
+  if (timeZoneId != null &&
+      !tz.timeZoneDatabase.locations.containsKey(timeZoneId)) {
+    throw const IcsImportException(IcsImportErrorCode.unknownTimezone);
+  }
+  try {
+    return parseIcsTemporal(value, parameters);
+  } on FormatException {
+    throw const IcsImportException(IcsImportErrorCode.invalidDate);
   }
 }
 

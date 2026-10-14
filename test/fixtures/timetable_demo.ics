@@ -1,0 +1,14 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Campus Navigator//Synthetic Emulator Demo//EN
+CALSCALE:GREGORIAN
+BEGIN:VEVENT
+UID:campus-demo-lecture
+DTSTART;TZID=Europe/Berlin:20261014T210000
+DTEND;TZID=Europe/Berlin:20261014T220000
+RRULE:FREQ=WEEKLY;COUNT=3;BYDAY=WE
+SUMMARY:Campus Systems Demo
+DESCRIPTION:Synthetic timetable entry for emulator acceptance checks.
+LOCATION:APB E069
+END:VEVENT
+END:VCALENDAR
