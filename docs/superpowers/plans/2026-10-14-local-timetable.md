@@ -89,16 +89,16 @@ Expected: failing occurrence assertions, with no test-harness errors.
 - Produce `RoomResolver({required Future<SearchResult> Function(String) search})` and `Future<RoomResolution> resolve(String location)`.
 - Search with LOCATION only. Normalize Unicode, case, punctuation and separators; auto-assign only one exact alias match across validated result name, subName and detail. Never auto-assign a building-only or fuzzy match.
 
-- [ ] **Step 1: Write tests** named `matches_apb_separator_variants`, `matches_full_building_name_and_room`, `matches_bey_and_bar_examples`, `ambiguous_room_is_never_auto_assigned`, `returns_building_only_without_room`, `returns_unresolved_for_unknown_room`, and `sends_location_only_to_search`.
-- [ ] **Step 2: Run the resolver tests and confirm the expected absent resolution behavior.**
+- [x] **Step 1: Write tests** named `matches_apb_separator_variants`, `matches_full_building_name_and_room`, `matches_bey_and_bar_examples`, `ambiguous_room_is_never_auto_assigned`, `returns_building_only_without_room`, `returns_unresolved_for_unknown_room`, and `sends_location_only_to_search`.
+- [x] **Step 2: Run the resolver tests and confirm the expected absent resolution behavior.**
 
 Run: `. .\tools\dev-env.ps1; $env:DART_SUPPRESS_ANALYTICS='true'; flutter test test/timetable/room_resolver_test.dart --no-pub`
 
 Expected: failing resolution assertions, with no test-harness errors.
 
-- [ ] **Step 3: Implement resolver using `SearchResult.searchAll` through the injected search, `SavedPlace.tryFromSearch`, and canonical result identifiers.**
-- [ ] **Step 4: Run the resolver test file and confirm all seven behaviors pass.**
-- [ ] **Step 5: Commit** as `feat: resolve timetable venues to campus places`.
+- [x] **Step 3: Implement resolver using `SearchResult.searchAll` through the injected search, `SavedPlace.tryFromSearch`, and canonical result identifiers.**
+- [x] **Step 4: Run the resolver test file and confirm all seven behaviors pass.**
+- [x] **Step 5: Commit** as `feat: resolve timetable venues to campus places`.
 
 ### Task 4: Transactional local storage and import management
 
