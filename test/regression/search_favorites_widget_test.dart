@@ -174,6 +174,8 @@ void main() {
     await tester.pumpAndSettle();
 
     final list = find.byType(ListView);
+    expect(tester.widget<ListView>(list).childrenDelegate,
+        isA<SliverChildBuilderDelegate>());
     for (var i = 0; i < 50 && find.text('TEST 647').evaluate().isEmpty; i++) {
       await tester.drag(list, const Offset(0, -1200));
       await tester.pumpAndSettle();

@@ -1,8 +1,8 @@
 import 'package:campus_navigator/api/building/building_page_data.dart';
 import 'package:campus_navigator/api/place_navigation.dart';
 import 'package:campus_navigator/api/saved_places.dart';
-import 'package:campus_navigator/api/search.dart';
 import 'package:campus_navigator/api/timetable/timetable_store.dart';
+import 'package:campus_navigator/ui/search_result_presentation.dart';
 import 'package:campus_navigator/ui/search_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -35,6 +35,7 @@ class _SearchScreenState extends State<SearchScreen> {
   late final PlaceStore _places;
   late final RoomSearchController _search;
   final _textController = TextEditingController();
+  final _resultPresentationCache = SearchResultPresentationCache();
   String? _opening;
 
   AppLocalizations get _l => AppLocalizations.of(context)!;
@@ -260,7 +261,7 @@ class _SearchScreenState extends State<SearchScreen> {
       children: children);
 
   Widget _content() => LayoutBuilder(builder: (context, bounds) {
-        if (_search.query.isNotEmpty) return _list(_results());
+        if (_search.query.isNotEmpty) return _resultsList();
         if (bounds.maxWidth < 720) return _list(_home());
         return Column(children: [
           ..._placeStatus(),
@@ -279,47 +280,74 @@ class _SearchScreenState extends State<SearchScreen> {
         ]);
       });
 
-  List<Widget> _results() {
+  Widget _resultsList() {
     final result = _search.result;
-    final rooms = result?.resultsRooms
-            .map((e) =>
-                (place: SavedPlace.tryFromSearch(e, PlaceKind.room), result: e))
-            .where((entry) => entry.place != null)
-            .toList() ??
-        <({SavedPlace? place, SearchResultObject result})>[];
-    final buildings = result?.resultsBuildings
-            .map((e) => SavedPlace.tryFromSearch(e, PlaceKind.building))
-            .whereType<SavedPlace>()
-            .toList() ??
-        <SavedPlace>[];
-    return [
-      if (_search.loading) ...[
-        const LinearProgressIndicator(minHeight: 2),
-        _empty(_l.searchLoading, Icons.search),
-      ],
-      if (_search.failed) ...[
-        _empty(_l.searchFailed, Icons.wifi_off),
-        Align(
-            alignment: Alignment.centerLeft,
-            child:
-                TextButton(onPressed: _search.retry, child: Text(_l.tryAgain))),
-      ],
-      if (result != null) ...[
-        if (result.assist.isNotEmpty)
-          Text(result.assist, style: Theme.of(context).textTheme.bodySmall),
-        if (rooms.isNotEmpty) ...[
-          _heading(_l.roomsTitle),
-          ...rooms.map(
-              (entry) => _entry(entry.place!, detail: entry.result.detail)),
-        ],
-        if (buildings.isNotEmpty) ...[
-          _heading(_l.buildingsTitle),
-          ...buildings.map(_entry),
-        ],
-        if (rooms.isEmpty && buildings.isEmpty)
-          _empty(_l.searchNoResults, Icons.search_off),
-        if (result.moreRooms || result.moreBuildings)
-          Align(
+    final presentation =
+        result == null ? null : _resultPresentationCache.forResult(result);
+    final rooms = presentation?.rooms ?? const <SearchRoomPresentationEntry>[];
+    final buildings = presentation?.buildings ?? const <SavedPlace>[];
+
+    var itemCount = _search.loading ? 2 : 0;
+    final failureStart = _search.failed ? itemCount : null;
+    if (_search.failed) itemCount += 2;
+    final assistIndex =
+        result != null && result.assist.isNotEmpty ? itemCount++ : null;
+    final roomHeadingIndex = rooms.isNotEmpty ? itemCount++ : null;
+    final roomStart = rooms.isNotEmpty ? itemCount : null;
+    if (roomStart != null) itemCount += rooms.length;
+    final buildingHeadingIndex = buildings.isNotEmpty ? itemCount++ : null;
+    final buildingStart = buildings.isNotEmpty ? itemCount : null;
+    if (buildingStart != null) itemCount += buildings.length;
+    final emptyIndex = result != null && rooms.isEmpty && buildings.isEmpty
+        ? itemCount++
+        : null;
+    final moreIndex =
+        result != null && (result.moreRooms || result.moreBuildings)
+            ? itemCount++
+            : null;
+
+    return ListView.builder(
+      key: const ValueKey('search-results'),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      itemCount: itemCount,
+      itemBuilder: (context, index) {
+        if (_search.loading && index < 2) {
+          return index == 0
+              ? const LinearProgressIndicator(minHeight: 2)
+              : _empty(_l.searchLoading, Icons.search);
+        }
+        if (failureStart != null && index == failureStart) {
+          return _empty(_l.searchFailed, Icons.wifi_off);
+        }
+        if (failureStart != null && index == failureStart + 1) {
+          return Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                  onPressed: _search.retry, child: Text(_l.tryAgain)));
+        }
+        if (assistIndex == index) {
+          return Text(result!.assist,
+              style: Theme.of(context).textTheme.bodySmall);
+        }
+        if (roomHeadingIndex == index) return _heading(_l.roomsTitle);
+        if (roomStart != null &&
+            index >= roomStart &&
+            index < roomStart + rooms.length) {
+          final entry = rooms[index - roomStart];
+          return _entry(entry.place, detail: entry.result.detail);
+        }
+        if (buildingHeadingIndex == index) return _heading(_l.buildingsTitle);
+        if (buildingStart != null &&
+            index >= buildingStart &&
+            index < buildingStart + buildings.length) {
+          return _entry(buildings[index - buildingStart]);
+        }
+        if (emptyIndex == index) {
+          return _empty(_l.searchNoResults, Icons.search_off);
+        }
+        if (moreIndex == index) {
+          return Align(
               alignment: Alignment.centerLeft,
               child: TextButton.icon(
                   key: const ValueKey('load-all-search-results'),
@@ -336,9 +364,11 @@ class _SearchScreenState extends State<SearchScreen> {
                       ? _l.searchLoadingAll
                       : _search.fullSearchFailed
                           ? _l.searchRetryAll
-                          : _l.searchLoadAll))),
-      ],
-    ];
+                          : _l.searchLoadAll)));
+        }
+        return const SizedBox.shrink();
+      },
+    );
   }
 
   @override
