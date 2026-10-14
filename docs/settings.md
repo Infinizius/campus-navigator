@@ -158,3 +158,22 @@ Abhängigkeitslizenzen mit Flutter `showLicensePage` und verweist auf
 OpenStreetMap-Mitwirkende für Kartenkacheln. Die App wird als inoffizielles
 Community-Projekt beschrieben; die Rechte am ursprünglichen AKORA-Code und an
 TU-Grundrissdaten werden ausdrücklich als ungeklärt bezeichnet.
+
+## Frühere Android-Nachweise aus dem Settings-Branch
+
+Die folgenden Screenshots stammen aus dem eigenständigen Settings-Branch vor
+der Root-App-Integration. Sie dokumentieren den Einstellungsbildschirm,
+Persistenz nach Prozessneustart, Cache-Leeren und den Erhalt von Favoriten und
+Verlauf. Sie belegen nicht die Integration in die aktuelle Root-App; dafür
+gelten die aktuellen Tests und Emulatorprüfungen des Release-Kandidaten.
+
+- [`settings-main-portrait.png`](settings-evidence/settings-main-portrait.png)
+- [`settings-system-dark.png`](settings-evidence/settings-system-dark.png)
+- [`settings-after-restart.png`](settings-evidence/settings-after-restart.png)
+- [`language-options.png`](settings-evidence/language-options.png)
+- [`data-cache.png`](settings-evidence/data-cache.png)
+- [`local-data-actions.png`](settings-evidence/local-data-actions.png)
+- [`clear-cache-dialog.png`](settings-evidence/clear-cache-dialog.png)
+- [`cache-cleared.png`](settings-evidence/cache-cleared.png)
+- [`favorites-after-cache-clear.png`](settings-evidence/favorites-after-cache-clear.png)
+- [`reset-dialog.png`](settings-evidence/reset-dialog.png)
