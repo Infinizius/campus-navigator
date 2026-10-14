@@ -8,6 +8,7 @@ Der Entwicklungsbranch `feature/campus-map` ergänzt eine OSM-Campuskarte mit
 anklickbaren TU-Gebäuden, Gebäudesuche, Etagenplan-Aufruf und expliziter
 Standortfreigabe. Die bestehende Raumsuche bleibt erhalten.
 [Technischer Bericht, Tests und Einschränkungen](docs/campus-map.md).
+[Google-Maps-Fußgängernavigation und Zielkoordinaten, Version 1.2.1](docs/campus-navigation.md).
 
 ## Private UI / dark-mode experiment
 

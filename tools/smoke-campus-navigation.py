@@ -1,6 +1,7 @@
 """Android acceptance check for the universal Google Maps walking URL.
 
-Run after installing the navigation APK on emulator-5554. Temporarily disables
+Run after installing the navigation APK on emulator-5554 and completing Chrome's
+first-run setup (without an account). Temporarily disables
 Maps to exercise the browser fallback, then restores it. Keeps app data intact.
 """
 from pathlib import Path
@@ -51,6 +52,9 @@ def return_to_campus(name):
 
 
 def launch(code, name, browser=False):
+    # Android keeps an activity's original base Intent after onNewIntent.
+    # Start the receiver fresh so dumpsys proves this exact outbound payload.
+    run('shell', 'am', 'force-stop', 'com.android.chrome' if browser else maps)
     q['choose'](code, name)
     q['exact']('Route destination: building point · entrance unverified.')
     q['capture'](f'{code.lower()}-detail')
