@@ -54,7 +54,7 @@ ist berücksichtigt:
 - Eigenständiger persistenter Kachelcache: HTTP-Cache-Control und ETag über
   `flutter_cache_manager`, ohne Cache-Header standardmäßig sieben Tage.
   Höchstens 1500 Cacheeinträge, Bereinigung nach 30 Tagen Nichtbenutzung.
-- Höchstens vier gleichzeitige Abrufe, 180 ms Wartezeit nach Kamerabewegungen,
+- Höchstens vier gleichzeitige Abrufe, Standard-Kachelaktualisierung der Bibliothek,
   `panBuffer: 0`, abgebrochene noch wartende Ausschnitte werden übersprungen.
   Höhere Pixeldichte wird mit passenden sichtbaren Kacheln bedient.
 - Keine Gebietsdownloads, Hintergrundvorbereitung, Zoomstufen-Scans oder Offlinepakete.
@@ -129,14 +129,23 @@ dart run tools/inspect_campus.dart F:/apps/Codex/campus-map-evidence/tu-building
 
 ## Abschließende Prüfung und Artefakte
 
-Anwendungscode: Commit `5e1b397fdd9c0c86244fbaee50669300757b6442`.
+Anwendungscode: Commit `63e7b86cb5e595c86f66701f1f327776cffc0c9b`.
 Die ersten Schritte liegen in `e30b3d0` (Feature), `6c77f9e` (Umlautkürzel)
-und `660a594` (Zentrierung nach Tastaturende). Der letzte Fix verhindert, dass
+und `660a594` (Zentrierung nach Tastaturende). Der Fokus-Fix `5e1b397` verhindert, dass
 die Gebäudesuche nach dem Rückweg aus dem Etagenplan erneut den Fokus erhält.
+`2e47a0b` entfernt die verzögerte Kachelaktualisierung: Sie hatte beim Suchzoom
+das Laden neuer Detailkacheln verhindert. Ein gezielter Widget-Test prüft jetzt
+die tatsächlich gestarteten nativen Zoom-19-Kacheln auf einem hochauflösenden
+Display. Der native Bildvergleich bestätigt den scharfen Nachladezustand.
+`63e7b86` trennt außerdem ausstehende dekodierte Kachelbilder nach ihrer
+Abbruch-Lebensdauer. Ein zuvor abgebrochener Abruf darf seinen transparenten
+Platzhalter nicht an eine neue sichtbare Kachel derselben URL vererben.
+Ein echter ImageStream-Test reproduzierte diesen Fehler vor der Korrektur und
+prüft jetzt die tatsächlich ausgegebenen Pixel; der Dateicache bleibt URL-basiert.
 
 | Prüfung | Ergebnis |
 | --- | --- |
-| `flutter test` mit Originalplan-Fixtures | **103 bestanden**, ein optionaler alter privater Fixturetest übersprungen; darunter 24 unveränderte Originalplan-Goldens |
+| `flutter test` mit Originalplan-Fixtures | **105 bestanden**, ein optionaler alter privater Fixturetest übersprungen; darunter 24 unveränderte Originalplan-Goldens |
 | Analyse | Keine Fehler oder Warnungen, 38 bereits vorhandene Stilhinweise; Standardaufruf Exit 1 wegen dieser Infos, `--no-fatal-infos` erfolgreich |
 | Android-Debug-Build | Erfolgreich |
 | Zusätzlicher Release-Build | Erfolgreich; vorhandene AGP-/Kotlin-Metadatenhinweise beim Android-Release-Lint bleiben bestehen |
@@ -155,24 +164,32 @@ GÖR → echter Etagenplan 00 → zurück sowie die Routenübergabe an die insta
 Google-Maps-App erfolgreich geprüft. Der externe Activity-Wechsel ist in
 `route-external-activity.txt` protokolliert. Eine Navigation vor Ort wurde nicht durchgeführt.
 
-Einmalige Grafikartefakte im längere Zeit laufenden Emulator verschwanden nach
-einem Android-Neustart; die unveränderte Release-APK wurde anschließend sauber
-gezeichnet. Eine genaue Ursache ist damit nicht bewiesen. Androids UIAutomator
-lieferte gelegentlich eine leere Hierarchie und wurde vom Testskript erneut
-abgefragt. Die abschließende Laufzeitprüfung enthielt keine Flutter- oder
-AndroidRuntime-Fehler. Diese Emulatorbesonderheiten wurden nicht durch Änderungen
-am funktionierenden Etagenplan-Renderer umgangen.
+Im `auto`-Grafikmodus des lokalen Emulators 37.2.12 traten bei wiederholten
+Größen-/Themenwechseln Grafikartefakte bis hin zu fehlenden Schriftzeichen auf.
+Ein Neustart allein beseitigte sie nicht dauerhaft. Die abschließenden Nachweise
+verwenden deshalb einen Kaltstart mit `-gpu swiftshader -feature -Vulkan -no-snapshot`.
+Die unveränderte APK wurde auf diesem Testpfad erneut geprüft; die App-Renderer
+wurden nicht auf Softwaredarstellung umgestellt. Android dokumentiert Software-
+Grafik als Alternative bei Problemen mit `auto`/`host`:
+[Grafikbeschleunigung des Emulators](https://developer.android.com/studio/run/emulator-acceleration).
+Die genaue Ursache des `auto`-Befunds bleibt ungeklärt; die Prüfung ersetzt
+keinen Hardware-/Bildratenvergleich auf physischen Geräten.
+
+Androids UIAutomator lieferte gelegentlich eine leere Hierarchie und wurde vom
+Testskript erneut abgefragt. Die abschließende Laufzeitprüfung enthielt keine
+Flutter- oder AndroidRuntime-Fehler. Grafikmodus und Startprotokolle stehen
+separat unter `render-environment.json` und `emulator-software.log`.
 
 Alle Dateien liegen unter `F:\apps\Codex\campus-map-evidence`:
 
 - `campus-navigator-1.2.0-campus-map.apk`: installierbare universelle Release-Test-APK,
-  54.887.534 Bytes / 52,3 MiB, Version **1.2.0 (3)**, Android 6/API 23 oder neuer,
+  54.887.536 Bytes / 52,3 MiB, Version **1.2.0 (3)**, Android 6/API 23 oder neuer,
   ARM32, ARM64 und x86_64; bestehende lokale Testsignatur.
 - `campus-navigator-1.2.0-campus-map-debug.apk`: zusätzlich geforderte Debug-APK,
-  218.171.024 Bytes. Beide APKs wurden als Updates installiert, ohne App-Daten zu löschen.
+  218.170.145 Bytes. Beide APKs wurden als Updates installiert, ohne App-Daten zu löschen.
 - `index.html`: Galerie unveränderter Emulatoraufnahmen auf beiden Bildschirmgrößen.
 - `manifest.json`: Prüfsummen, Quellstand und Geräteprüfungen.
-- `tests-final.log`, `analyze-final.log`, `build-debug-final.log`,
+- `flutter-test-final.log`, `flutter-analyze-final.log`, `build-debug-final.log`,
   `build-release-final.log`, `emulator-smoke.log`, `emulator-runtime-errors.txt`:
   tatsächliche Prüfprotokolle.
 - `before-campus-map.bundle`: verifizierte Sicherung vor dem Feature.
@@ -180,9 +197,9 @@ Alle Dateien liegen unter `F:\apps\Codex\campus-map-evidence`:
   Die bisherigen Branchspitzen und `master` wurden nicht verändert; kein Push.
 
 SHA256 der Release-Test-APK:
-`fb2e72715c7ac7affae69ac6d926eb37121301b04089f8852165e7e1286108ef`.
+`e98ae0442f49a3cedcc21c63d1f4679e324a22227104099f89aa4debe545e9be`.
 SHA256 der Debug-APK:
-`3bc36a633b2e17ae234f9bad7a16669f18b010964f3eebb63efea373922f5f4a`.
+`578bf892ae2732e0b22c720a899ea5da78f60f3835b31f2b80cfd3afd0dc3662`.
 
 ## Verbleibende Einschränkungen
 

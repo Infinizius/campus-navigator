@@ -1,6 +1,6 @@
 # Campuskarte 1.2.0 – kurzer technischer Bericht
 
-14.10.2026 · Branch **`feature/campus-map`** · Anwendungscode **`5e1b397`**.
+14.10.2026 · Branch **`feature/campus-map`** · Anwendungscode **`63e7b86`**.
 Ausgangsstand `aab8dba` war sauber und wurde vor Beginn als vollständiges,
 verifiziertes Git-Bundle gesichert. `master`, `feature/search-and-favorites`
 und `codex/renderer-recovery` bleiben unverändert; kein Push.
@@ -35,7 +35,7 @@ Standortzugriff erfolgt ausschließlich auf Knopfdruck als einzelne Messung.
 
 ## Nachweise
 
-- **103 Tests bestanden**, ein optionaler alter privater Fixturetest übersprungen;
+- **105 Tests bestanden**, ein optionaler alter privater Fixturetest übersprungen;
   darin 24 unveränderte Originalplan-Goldens und die bestehende Suche/Favoriten-Suite.
 - `flutter analyze`: keine Fehler oder Warnungen, 38 vorhandene Stilhinweise.
   Standardaufruf deshalb Exit 1; mit `--no-fatal-infos` erfolgreich.
@@ -50,8 +50,15 @@ Standortzugriff erfolgt ausschließlich auf Knopfdruck als einzelne Messung.
   Routenübergabe an die installierte Google-Maps-App.
 - Ein im Rückweg erkannter Fokusfehler wurde behoben und abgesichert: Die
   Such-Tastatur öffnet sich nach dem Etagenplan nicht erneut.
-  Einmalige Emulator-Grafikartefakte verschwanden nach Android-Neustart;
-  die abschließende vollständige Abnahme und Laufzeitfehlerprüfung waren sauber.
+  Im lokalen Emulator zeigte `auto` wiederholt Schriftartefakte bei Größen-/Themenwechseln.
+  Die Schlussprüfung verwendet deshalb SwiftShader mit deaktiviertem Vulkan und Kaltstart;
+  der App-Renderer blieb unverändert. Die genaue Ursache im `auto`-Pfad ist offen.
+- Der Suchzoom lädt nach einem gezielten Fix die passende native Kachelstufe.
+  Das wurde durch einen zunächst fehlschlagenden Widget-Test sowie die scharfe
+  Kartendarstellung im Emulator bestätigt; unnötige verzögerte Event-Bündelung entfällt.
+- Ein weiterer zunächst fehlschlagender Test reproduziert die Wiederverwendung eines
+  abgebrochenen Kachelbildes. Getrennte Ladevorgänge verhindern nun leere Ersatzkacheln;
+  der persistente Kachelcache bleibt nach URL geteilt.
 
 ## Dateien
 
@@ -64,7 +71,7 @@ unterstützt ARM32/ARM64/x86_64 und ist **52,3 MiB** groß. Zusätzlich liegt di
 geforderte Debug-APK vor. Installation als Update erhält die vorhandenen App-Daten.
 
 Release-SHA256:
-`fb2e72715c7ac7affae69ac6d926eb37121301b04089f8852165e7e1286108ef`.
+`e98ae0442f49a3cedcc21c63d1f4679e324a22227104099f89aa4debe545e9be`.
 
 ## Verbleibende Einschränkungen
 
