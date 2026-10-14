@@ -31,6 +31,26 @@ Widget layoutApp(Widget home, {double scale = 1}) => MaterialApp(
     home: home);
 
 void main() {
+  testWidgets('compact hub does not reserve button space in a passive heading',
+      (tester) async {
+    tester.view.physicalSize = const Size(393, 852);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final places = MemoryPlaces().create();
+    await places.toggle(room('bey', '111103.5220', name: 'BEY 318'));
+    final search = RoomSearchController(prefetch: false);
+    await tester
+        .pumpWidget(layoutApp(SearchScreen(places: places, search: search)));
+    await tester.pumpAndSettle();
+    final heading = tester.getRect(find.text('Favoriten'));
+    final row = tester.getRect(
+        find.byKey(const ValueKey('place-favorite-room:bey:111103.5220')));
+    expect(row.top - heading.top, lessThanOrEqualTo(28));
+    await tester.pumpWidget(const SizedBox());
+    places.dispose();
+    search.dispose();
+  });
   testWidgets('selected building keeps all map tools inside a rotated phone',
       (tester) async {
     tester.view.physicalSize = const Size(852, 393);

@@ -167,7 +167,11 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget _heading(String text, {Widget? action}) => Padding(
       padding: const EdgeInsets.only(top: 12, bottom: 4),
       child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 48),
+          constraints: BoxConstraints(
+              minHeight: _search.query.isEmpty &&
+                      MediaQuery.sizeOf(context).width >= 720
+                  ? 48
+                  : 0),
           child: Row(children: [
             Expanded(
                 child:

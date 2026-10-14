@@ -93,3 +93,10 @@ Review declined: authentifizierte Belegung, echtes Standortsignal/externe
 Navigation, private Fixtures und muttersprachliche Übersetzung brauchen
 Umgebungsdaten; vorhandene Kalender-/Adress-/Kameraverhalten bewusst erhalten.
 Explizite Script-Locales wurden dem Settings-Owner gemeldet; dessen Fix folgt.
+
+Visual ruling: passive Überschriften im Smartphone-Hub benötigen keine
+48-dp-Buttonhöhe — Vorher-Vergleich zeigte 28 dp unnötigen Abstand pro
+Abschnitt — nur breite zweispaltige Hubs reservieren den Aktionsraum für
+symmetrische Listen. Abstandstest 38 dp rot, kompakte Überschrift danach grün.
+Letzter Settings-Fix 83f3e96 identisch als 6413f87 übernommen; finale Suite
+152 bestanden / 26 externe Fixture-Skips, Analyze 36 Infos, APK erfolgreich.
