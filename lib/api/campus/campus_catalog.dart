@@ -18,6 +18,8 @@ class CachedCampusData {
 class CampusCatalog extends ChangeNotifier {
   static final _cache = CacheManager(Config('campusBuildingsV1',
       stalePeriod: const Duration(days: 365), maxNrOfCacheObjects: 2));
+  static Future<void> clearDiskCache() => _cache.emptyCache();
+
   final Future<CachedCampusData?> Function() _read;
   final Future<String> Function() _fetch;
   final Future<void> Function(String) _write;
