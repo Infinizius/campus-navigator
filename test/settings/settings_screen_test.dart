@@ -169,7 +169,12 @@ void main() {
     await tester
         .tap(find.byType(DropdownButtonFormField<AppCampusIdentityStyle>));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Option B · Campus wayfinding').last);
+    final optionB = find.byWidgetPredicate(
+      (widget) =>
+          widget is DropdownMenuItem<AppCampusIdentityStyle> &&
+          widget.value == AppCampusIdentityStyle.wayfinding,
+    );
+    await tester.tap(optionB.last);
     await tester.pumpAndSettle();
 
     expect(controller.campusIdentityStyle, AppCampusIdentityStyle.wayfinding);
