@@ -155,6 +155,30 @@ void main() {
     controller.dispose();
   });
 
+  testWidgets('Campus Identity can switch to option B and persists immediately',
+      (tester) async {
+    final values = _MemorySettings();
+    final controller = AppSettingsController(store: values);
+    await controller.load();
+    final places = PlaceStore(read: () async => null, write: (_) async {});
+    await tester
+        .pumpWidget(_settingsApp(controller: controller, places: places));
+    await tester.pumpAndSettle();
+
+    expect(controller.campusIdentityStyle, AppCampusIdentityStyle.academic);
+    await tester
+        .tap(find.byType(DropdownButtonFormField<AppCampusIdentityStyle>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Option B · Campus wayfinding').last);
+    await tester.pumpAndSettle();
+
+    expect(controller.campusIdentityStyle, AppCampusIdentityStyle.wayfinding);
+    expect(values.values[AppSettingsController.campusIdentityStyleKey],
+        'wayfinding');
+    places.dispose();
+    controller.dispose();
+  });
+
   testWidgets('protects credentials when secure storage cannot load them',
       (tester) async {
     final originalStorage = APIServices.Shared.storage;

@@ -40,6 +40,57 @@ void main() {
       expect(controller.locale, isNull);
     });
 
+    test('uses Campus Identity option A by default', () async {
+      final controller = AppSettingsController(store: MemorySettingsStore());
+      await controller.load();
+
+      expect(controller.campusIdentityStyle, AppCampusIdentityStyle.academic);
+      controller.dispose();
+    });
+
+    test('persists the Campus Identity style across controller recreation',
+        () async {
+      final store = MemorySettingsStore();
+      final first = AppSettingsController(store: store);
+      await first.load();
+      await first.setCampusIdentityStyle(AppCampusIdentityStyle.wayfinding);
+
+      final restarted = AppSettingsController(store: store);
+      await restarted.load();
+
+      expect(restarted.campusIdentityStyle, AppCampusIdentityStyle.wayfinding);
+      expect(store.values[AppSettingsController.campusIdentityStyleKey],
+          'wayfinding');
+      first.dispose();
+      restarted.dispose();
+    });
+
+    test('does not change Campus Identity when its write fails', () async {
+      final store = MemorySettingsStore()
+        ..failedWrites.add(AppSettingsController.campusIdentityStyleKey);
+      final controller = AppSettingsController(store: store);
+      await controller.load();
+
+      await expectLater(
+        controller.setCampusIdentityStyle(AppCampusIdentityStyle.wayfinding),
+        throwsA(isA<StateError>()),
+      );
+
+      expect(controller.campusIdentityStyle, AppCampusIdentityStyle.academic);
+      controller.dispose();
+    });
+
+    test('invalid Campus Identity values fall back to option A', () async {
+      final store = MemorySettingsStore()
+        ..values[AppSettingsController.campusIdentityStyleKey] = 'unknown';
+      final controller = AppSettingsController(store: store);
+
+      await controller.load();
+
+      expect(controller.campusIdentityStyle, AppCampusIdentityStyle.academic);
+      controller.dispose();
+    });
+
     test('persists theme, map style and language across controller recreation',
         () async {
       final store = MemorySettingsStore();
@@ -93,6 +144,8 @@ void main() {
       await controller.setThemeMode(ThemeMode.dark);
       await controller.setCampusMapThemeMode(CampusMapThemeMode.dark);
       await controller.setLocale(const Locale('ar'));
+      await controller
+          .setCampusIdentityStyle(AppCampusIdentityStyle.wayfinding);
 
       await controller.restoreAppearanceDefaults();
       final restarted = AppSettingsController(store: store);
@@ -100,6 +153,7 @@ void main() {
 
       expect(restarted.themeMode, ThemeMode.system);
       expect(restarted.campusMapThemeMode, CampusMapThemeMode.automatic);
+      expect(restarted.campusIdentityStyle, AppCampusIdentityStyle.academic);
       expect(restarted.locale, isNull);
     });
 
@@ -134,6 +188,7 @@ void main() {
       final store = MemorySettingsStore()
         ..values[AppSettingsController.themeModeKey] = 'ultraviolet'
         ..values[AppSettingsController.mapThemeModeKey] = 'satellite'
+        ..values[AppSettingsController.campusIdentityStyleKey] = 'experimental'
         ..values[AppSettingsController.localeKey] = 'xx-ZZ';
       final controller = AppSettingsController(store: store);
 
@@ -141,6 +196,7 @@ void main() {
 
       expect(controller.themeMode, ThemeMode.system);
       expect(controller.campusMapThemeMode, CampusMapThemeMode.automatic);
+      expect(controller.campusIdentityStyle, AppCampusIdentityStyle.academic);
       expect(controller.locale, isNull);
     });
 
