@@ -1,6 +1,6 @@
 # Campus Navigator – Release Candidate QA
 
-**Candidate:** `v0.1.0-rc1` · **Branch:** `release/qa-2026-10-14` · **Test date:** 2026-10-14
+**Release version:** `1.3.0+5` · **GitHub tag:** `v1.3.0` · **Branch:** `release/qa-2026-10-14` · **Test date:** 2026-10-14
 **Stable branch:** `master` remained at `0441326300600ceff155dad0e1b0a89b2d4f3710`.
 
 ## Integration record
@@ -14,6 +14,8 @@
 ## Automated checks
 
 Flutter SDK 3.24.5 / Dart 3.5.4 was used.
+
+The release version was advanced from `1.2.1+4` to `1.3.0+5` before the final verification and APK build.
 
 | Check | Result |
 |---|---|
@@ -51,8 +53,8 @@ Evidence screenshots are in [`docs/release-candidate-evidence/`](release-candida
 ## Artifact and rollback
 
 - APK: [`build/app/outputs/flutter-apk/app-debug.apk`](../build/app/outputs/flutter-apk/app-debug.apk)
-- SHA-256: `62AFBE4A15D93A6FAE4F5CEEDFD2BB65D0754842719B004B5756F8699BB54FF8`
-- The annotated tag `v0.1.0-rc1` identifies the reviewed candidate commit. `backup/last-known-good-2026-10-14` identifies the pre-integration known-good UI commit.
+- SHA-256: `9C7784952A300C100B2459A1D1013F6ED0A123CFED1872C12808A1A1BB56E9B9`
+- The annotated tag `v0.1.0-rc1` preserves the initial QA candidate. The release tag `v1.3.0` identifies the versioned release commit. `backup/last-known-good-2026-10-14` identifies the pre-integration known-good UI commit.
 - Candidate changes remain isolated on `release/qa-2026-10-14`. No merge, cherry-pick, or ref update was made on `master`; final adoption is waiting for user approval.
 
 ## Recommended next steps
