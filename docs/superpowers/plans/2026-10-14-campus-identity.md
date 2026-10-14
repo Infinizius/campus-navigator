@@ -65,7 +65,7 @@ Debug-App-Verzeichnis; verwendet unverändertes `FloorView(data)`.
   aufnehmen; Layout, Labels, Textkontrast und sichtbare Kartenfläche prüfen.
 - [x] Plan selbst gegen alle Spec-Anforderungen prüfen.
 - [x] Vergleichsgalerie und kurze Begründung zur Präsentation bereitstellen.
-- [ ] Nutzerwahl A oder B dokumentieren; keine zusätzliche Planfreigabe nötig.
+- [x] Arbeitsrichtung B (Campus Wayfinding) festlegen; keine zusätzliche Planfreigabe nötig.
 - [x] Baseline-Commit `c391ced` erstellen.
 - [x] Design/Plan-Commit erstellen.
 

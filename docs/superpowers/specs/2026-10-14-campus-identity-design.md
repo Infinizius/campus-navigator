@@ -1,6 +1,6 @@
 # Campus Identity – Gestaltung und Grenzen
 
-14.10.2026 · Phase A · Variantenentscheidung noch offen.
+14.10.2026 · Phase B · Arbeitsrichtung B (Campus Wayfinding).
 
 ## Ziel und Gestaltungsrichtung
 
@@ -91,6 +91,6 @@ Siehe `docs/ui-evidence/README.md` und Bildordner `identity-a`, `identity-b`.
 Beide Varianten verwenden gleiche Inhalte, Kameras und Gerätegrößen.
 Die Vorschau demonstriert Gestaltung, Scrollen, Tastatur, Kartenzoom und
 unveränderten Grundriss; ihre Datenaktionen sind noch keine Produktfunktion.
-Nach Präsentation wählt der Nutzer A oder B. Bis dahin keine größere
-Produktänderung. Danach Umsetzung und Integration ausschließlich auf
+Nach Präsentation wird B als empfohlene Arbeitsrichtung übernommen.
+Umsetzung und Integration erfolgen ausschließlich auf
 `feature/ui-refinement`, ohne Merge nach `master`.
