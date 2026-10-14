@@ -229,7 +229,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       content: _settingsText(
           AppLocalizations.of(context)!,
           'settingsRestoreDefaultsDescription',
-          'Use the device theme and language, with automatic campus map styling.'),
+          'Use the device theme and language, automatic campus map styling, and Campus Identity option A.'),
     )) {
       return;
     }
@@ -400,6 +400,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onChanged: (value) {
               if (value != null) {
                 _persist(() => settings.setCampusMapThemeMode(value));
+              }
+            },
+          ),
+          const SizedBox(height: 12),
+          _settingsDropdown<AppCampusIdentityStyle>(
+            label: _settingsText(
+                l10n, 'settingsIdentityStyleTitle', 'Campus identity'),
+            value: settings.campusIdentityStyle,
+            items: [
+              DropdownMenuItem(
+                value: AppCampusIdentityStyle.academic,
+                child: Text(_settingsText(
+                  l10n,
+                  'settingsIdentityAcademic',
+                  'Option A · Modern academic',
+                )),
+              ),
+              DropdownMenuItem(
+                value: AppCampusIdentityStyle.wayfinding,
+                child: Text(_settingsText(
+                  l10n,
+                  'settingsIdentityWayfinding',
+                  'Option B · Campus wayfinding',
+                )),
+              ),
+            ],
+            onChanged: (value) {
+              if (value != null) {
+                _persist(() => settings.setCampusIdentityStyle(value));
               }
             },
           ),
@@ -718,6 +747,9 @@ String _settingsText(
       'settingsMapThemeAutomatic' => l10n.settingsMapThemeAutomatic as String,
       'settingsMapThemeLight' => l10n.settingsMapThemeLight as String,
       'settingsMapThemeDark' => l10n.settingsMapThemeDark as String,
+      'settingsIdentityStyleTitle' => l10n.settingsIdentityStyleTitle as String,
+      'settingsIdentityAcademic' => l10n.settingsIdentityAcademic as String,
+      'settingsIdentityWayfinding' => l10n.settingsIdentityWayfinding as String,
       'settingsDataTitle' => l10n.settingsDataTitle as String,
       'settingsCacheSize' => l10n.settingsCacheSize as String,
       'settingsCacheUnavailable' => l10n.settingsCacheUnavailable as String,

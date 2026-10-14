@@ -62,6 +62,12 @@ angezeigt.
 `automatic` folgt der effektiven Helligkeit des App-Themes; `light` und `dark`
 setzen nur den Stil der Campuskarte. Der Etagenplan-Renderer bleibt unverändert.
 
+Die UI-Integration liest `AppSettingsScope.of(context).campusIdentityStyle`.
+`AppCampusIdentityStyle.academic` wählt den Entwurf Option A und ist der
+Standard; `AppCampusIdentityStyle.wayfinding` wählt Option B. Beide
+Campus-Identity-Entwürfe bleiben erreichbar. Die Einstellung wird sofort im
+Controller aktualisiert und über Neustarts gespeichert.
+
 ## Controller- und Speichervertrag
 
 `lib/settings/app_settings_controller.dart` enthält Modell, unterstützte
@@ -73,10 +79,13 @@ mit einem In-Memory-Store ersetzen.
 | --- | --- | --- |
 | App-Theme | `AppThemeMode` | `system` |
 | Campus-Kartenstil | `CampusMapThemeMode` | `automatic` |
+| Campus Identity | `CampusIdentityStyle` | `academic` (Option A) |
 | Sprache | `AppLocale` | nicht gespeichert (`null` = Gerät) |
 
-Ungültige Werte werden zu System-Theme, automatischem Kartenstil oder
-Gerätesprache. `restoreAppearanceDefaults()` entfernt nur diese drei Schlüssel.
+Ungültige Werte werden zu System-Theme, automatischem Kartenstil, Campus
+Identity Option A oder Gerätesprache. `academic` bezeichnet Option A,
+`wayfinding` Option B. `restoreAppearanceDefaults()` entfernt nur diese vier
+Schlüssel und stellt damit Option A als Standard wieder her.
 Das löscht keine Zugangsdaten, Favoriten oder den Verlauf. Neue Controller
 laden mit `await controller.load()`; Setter speichern seriell und benachrichtigen
 abhängige Widgets unmittelbar.
@@ -129,11 +138,13 @@ settingsHistoryActionFailure, settingsSaveFailure, settingsCacheBytesUnit,
 settingsCacheKilobytesUnit, settingsCacheMegabytesUnit,
 settingsLocalDataTitle, settingsLocalDataDescription,
 settingsDataSourcesDescription, settingsShowPassword, settingsHidePassword,
-settingsCredentialsLoadFailure
+settingsCredentialsLoadFailure, settingsIdentityStyleTitle,
+settingsIdentityAcademic, settingsIdentityWayfinding
 ```
 
-Der UI-Branch lokalisiert zusätzlich alle bestehenden Screens und die bereits
-vorhandenen Einstellungsfelder in denselben ARB-Katalogen.
+Der UI-Branch lokalisiert zusätzlich alle bestehenden Screens, die bereits
+vorhandenen Einstellungsfelder und die drei Campus-Identity-Schlüssel in
+denselben 14 ARB-Katalogen.
 
 ## App-Informationen und Rechtehinweise
 

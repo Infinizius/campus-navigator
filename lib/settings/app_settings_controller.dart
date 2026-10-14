@@ -4,6 +4,10 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 enum CampusMapThemeMode { automatic, light, dark }
 
+/// Selects one of the two approved Campus Identity visual directions.
+/// `academic` is option A and remains the default.
+enum AppCampusIdentityStyle { academic, wayfinding }
+
 enum AppLanguage {
   german('de', 'Deutsch'),
   english('en', 'English'),
@@ -83,6 +87,7 @@ class SecureAppSettingsStore implements AppSettingsStore {
 class AppSettingsController extends ChangeNotifier {
   static const themeModeKey = 'AppThemeMode';
   static const mapThemeModeKey = 'CampusMapThemeMode';
+  static const campusIdentityStyleKey = 'CampusIdentityStyle';
   static const localeKey = 'AppLocale';
   static const fallbackLocale = Locale('en');
 
@@ -100,6 +105,7 @@ class AppSettingsController extends ChangeNotifier {
   final AppSettingsStore _store;
   ThemeMode _themeMode = ThemeMode.system;
   CampusMapThemeMode _campusMapThemeMode = CampusMapThemeMode.automatic;
+  AppCampusIdentityStyle _campusIdentityStyle = AppCampusIdentityStyle.academic;
   Locale? _locale;
   Future<void>? _loadFuture;
   Future<void> _writes = Future<void>.value();
@@ -107,6 +113,7 @@ class AppSettingsController extends ChangeNotifier {
 
   ThemeMode get themeMode => _themeMode;
   CampusMapThemeMode get campusMapThemeMode => _campusMapThemeMode;
+  AppCampusIdentityStyle get campusIdentityStyle => _campusIdentityStyle;
 
   /// `null` follows the device locale; the app's locale resolver supplies the
   /// English fallback for unsupported device languages.
@@ -121,12 +128,15 @@ class AppSettingsController extends ChangeNotifier {
     final values = await Future.wait([
       _readSafely(themeModeKey),
       _readSafely(mapThemeModeKey),
+      _readSafely(campusIdentityStyleKey),
       _readSafely(localeKey),
     ]);
     _themeMode = _parseThemeMode(values[0]) ?? ThemeMode.system;
     _campusMapThemeMode =
         _parseMapThemeMode(values[1]) ?? CampusMapThemeMode.automatic;
-    _locale = _parseLocale(values[2]);
+    _campusIdentityStyle =
+        _parseCampusIdentityStyle(values[2]) ?? AppCampusIdentityStyle.academic;
+    _locale = _parseLocale(values[3]);
     _loaded = true;
     notifyListeners();
   }
@@ -157,6 +167,14 @@ class AppSettingsController extends ChangeNotifier {
     return null;
   }
 
+  AppCampusIdentityStyle? _parseCampusIdentityStyle(String? value) {
+    if (value == null) return null;
+    for (final style in AppCampusIdentityStyle.values) {
+      if (style.name == value) return style;
+    }
+    return null;
+  }
+
   Locale? _parseLocale(String? value) {
     if (value == null || value == 'system') return null;
     for (final language in AppLanguage.values) {
@@ -179,6 +197,13 @@ class AppSettingsController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> setCampusIdentityStyle(AppCampusIdentityStyle style) async {
+    await load();
+    await _enqueueWrite(() => _store.write(campusIdentityStyleKey, style.name));
+    _campusIdentityStyle = style;
+    notifyListeners();
+  }
+
   Future<void> setLocale(Locale? locale) async {
     final language = locale == null ? null : AppLanguage.fromLocale(locale);
     if (locale != null && language == null) {
@@ -198,6 +223,7 @@ class AppSettingsController extends ChangeNotifier {
       await _enqueueWrite(() async {
         await _store.remove(themeModeKey);
         await _store.remove(mapThemeModeKey);
+        await _store.remove(campusIdentityStyleKey);
         await _store.remove(localeKey);
       });
     } catch (_) {
@@ -208,6 +234,7 @@ class AppSettingsController extends ChangeNotifier {
     }
     _themeMode = ThemeMode.system;
     _campusMapThemeMode = CampusMapThemeMode.automatic;
+    _campusIdentityStyle = AppCampusIdentityStyle.academic;
     _locale = null;
     notifyListeners();
   }
