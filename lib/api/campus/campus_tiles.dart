@@ -15,8 +15,10 @@ class CampusTileProvider extends TileProvider {
       fileService: HttpFileService()..concurrentFetches = 4));
   static final _limiter = RequestLimiter(4);
   final VoidCallback onFailure;
-  CampusTileProvider({required this.onFailure})
-      : super(headers: {
+  final BaseCacheManager cache;
+  CampusTileProvider({required this.onFailure, BaseCacheManager? cache})
+      : cache = cache ?? _cache,
+        super(headers: {
           'User-Agent':
               'CampusNavigator/1.2 (+https://github.com/Infinizius/campus-navigator)',
         });
@@ -27,8 +29,8 @@ class CampusTileProvider extends TileProvider {
   @override
   ImageProvider getImageWithCancelLoadingSupport(TileCoordinates coordinates,
           TileLayer options, Future<void> cancelLoading) =>
-      _CampusTileImage(
-          getTileUrl(coordinates, options), headers, cancelLoading, onFailure);
+      _CampusTileImage(getTileUrl(coordinates, options), headers, cancelLoading,
+          onFailure, cache);
 }
 
 class _CampusTileImage extends ImageProvider<_CampusTileImage> {
@@ -36,7 +38,9 @@ class _CampusTileImage extends ImageProvider<_CampusTileImage> {
   final Map<String, String> headers;
   final Future<void> cancelLoading;
   final VoidCallback onFailure;
-  _CampusTileImage(this.url, this.headers, this.cancelLoading, this.onFailure);
+  final BaseCacheManager cache;
+  _CampusTileImage(
+      this.url, this.headers, this.cancelLoading, this.onFailure, this.cache);
 
   @override
   Future<_CampusTileImage> obtainKey(ImageConfiguration configuration) =>
@@ -54,7 +58,7 @@ class _CampusTileImage extends ImageProvider<_CampusTileImage> {
     try {
       bytes = await CampusTileProvider._limiter.run(() async {
         if (cancelled) return null;
-        final file = await CampusTileProvider._cache
+        final file = await cache
             .getSingleFile(url, headers: headers)
             .timeout(const Duration(seconds: 12));
         return file.readAsBytes();
@@ -66,7 +70,7 @@ class _CampusTileImage extends ImageProvider<_CampusTileImage> {
       if (!cancelled) onFailure();
       // Previously viewed stale tiles can still be useful without a connection.
       try {
-        final cached = await CampusTileProvider._cache.getFileFromCache(url);
+        final cached = await cache.getFileFromCache(url);
         if (cached != null && !cancelled) {
           return await decode(await ui.ImmutableBuffer.fromUint8List(
               await cached.file.readAsBytes()));
@@ -82,7 +86,12 @@ class _CampusTileImage extends ImageProvider<_CampusTileImage> {
 
   @override
   bool operator ==(Object other) =>
-      other is _CampusTileImage && other.url == url;
+      other is _CampusTileImage &&
+      other.url == url &&
+      identical(other.cancelLoading, cancelLoading) &&
+      identical(other.cache, cache);
   @override
-  int get hashCode => url.hashCode;
+  // A replacement tile must not inherit a cancelled in-flight image completer.
+  // Disk bytes remain shared by URL; decoded images follow the tile lifetime.
+  int get hashCode => Object.hash(url, cancelLoading, cache);
 }
