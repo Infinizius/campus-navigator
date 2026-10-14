@@ -2,9 +2,13 @@ import 'package:campus_navigator/ui/styling.dart';
 import 'package:campus_navigator/api/building/roomOccupancyPlan.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 Widget occupancyTableView(
-    List<List<List<String>>>? roomPlan, bool showOccupancyTable) {
+    List<List<List<String>>>? roomPlan, bool showOccupancyTable,
+    {BuildContext? context}) {
+  final l = context == null ? null : AppLocalizations.of(context);
+  final colors = context == null ? null : Theme.of(context).colorScheme;
   var basicStyle = const TextStyle(fontSize: 12);
   var boldStyle = const TextStyle(fontSize: 12, fontWeight: FontWeight.bold);
   List<Widget> allTables = [];
@@ -52,7 +56,8 @@ Widget occupancyTableView(
       if (index == 0) {
         tableRows.add(TableRow(
             children: rowEntries,
-            decoration: const BoxDecoration(color: Styling.primaryColor)));
+            decoration: BoxDecoration(
+                color: colors?.primaryContainer ?? Styling.primaryColor)));
       } else {
         tableRows.add(TableRow(children: rowEntries));
       }
@@ -72,7 +77,13 @@ Widget occupancyTableView(
       children: tableRows,
     );
     if (tableRows.isNotEmpty) {
-      allTables.add(Text(RoomOccupancyPlan.tableNames[i]));
+      allTables.add(Text(l == null
+          ? RoomOccupancyPlan.tableNames[i]
+          : [
+              l.occupancyCurrentWeek,
+              l.occupancyNextWeek,
+              l.occupancyFollowingWeek
+            ][i]));
       allTables.add(fullTable);
       allTables.add(const SizedBox(
         height: 10,

@@ -65,7 +65,7 @@ Debug-App-Verzeichnis; verwendet unverändertes `FloorView(data)`.
   aufnehmen; Layout, Labels, Textkontrast und sichtbare Kartenfläche prüfen.
 - [x] Plan selbst gegen alle Spec-Anforderungen prüfen.
 - [x] Vergleichsgalerie und kurze Begründung zur Präsentation bereitstellen.
-- [x] Arbeitsrichtung B (Campus Wayfinding) festlegen; keine zusätzliche Planfreigabe nötig.
+- [x] Beide Varianten umschaltbar; bestätigter Standard A (Modern Academic).
 - [x] Baseline-Commit `c391ced` erstellen.
 - [x] Design/Plan-Commit erstellen.
 
@@ -88,7 +88,7 @@ Future<BuildingPageData> Function(SavedPlace)? loadPlace})` erhalten.
   bzw. Hierarchiefehler dokumentieren, bereits grüne Regressionen erhalten.
 - [ ] Gewählte A/B-Präsentation mit 48-dp-Aktionen implementieren;
   WIP-Hinweis innerhalb einer erreichbaren Aktion platzieren;
-  zwei Listen ab 680 dp Inhaltsbreite, vorhandene Suchzustände erhalten.
+  zwei Listen ab 720 dp Inhaltsbreite, vorhandene Suchzustände erhalten.
 - [ ] Leere Favoriten/Verlauf, keine Treffer, Lade-/Speicherfehler und
   Retry im vorhandenen Controller testen; Enter-Suche, Löschen,
   Tastatur-Schließen und direktes Öffnen im Emulator prüfen.
@@ -105,7 +105,7 @@ Future<BuildingPageData> Function(SavedPlace)? loadPlace})` erhalten.
 
 **Interfaces:** bestehende Catalog-/Tile-/Location-Services und
 `loadBuildingFloor(String code)` unverändert; IndexedStack/lazy map erhalten;
-840-dp-Schwelle für Seitenleiste/NavigationRail.
+840-dp-Schwelle für Seitenleiste; Rail ab 1000 dp Gerätebreite.
 
 - [ ] Karten-Tastaturproblem in 393-dp-Ansicht reproduzieren; Insets durch
   Home-/Map-Scaffold verfolgen, Ursache anhand tatsächlicher Constraints

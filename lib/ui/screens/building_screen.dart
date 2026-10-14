@@ -16,6 +16,8 @@ import '../../api/storage.dart';
 import '../components/bottom_sheet_view.dart';
 import '../components/floor_view.dart';
 import '../components/occupancyTableView.dart';
+import '../campus_identity.dart';
+import '../styling.dart';
 
 class BuildingScreen extends StatefulWidget {
   BuildingScreen(
@@ -90,7 +92,8 @@ class _BuildingScreenState extends State<BuildingScreen> {
   void onError(Object e) {
     if (!mounted) return;
     setState(() {
-      errorMessageOccupancyTable = e.toString();
+      errorMessageOccupancyTable =
+          AppLocalizations.of(context)!.occupancyFailed;
     });
   }
 
@@ -109,7 +112,7 @@ class _BuildingScreenState extends State<BuildingScreen> {
         future: widget.room,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return Text("${localizations.error}: ${snapshot.error}");
+            return Text(localizations.floorUnavailable);
           }
           if (!snapshot.hasData) return const SizedBox.shrink();
 
@@ -119,19 +122,18 @@ class _BuildingScreenState extends State<BuildingScreen> {
   }
 
   String _filterLabel(layerFilterOptions option) {
-    if (Localizations.localeOf(context).languageCode != 'de')
-      return option.toString();
-    const names = [
-      'Raumbezeichnungen',
-      'Seminarräume',
-      'Toiletten',
-      'Barrierefreie Toiletten',
-      'Treppen',
-      'Aufzüge',
-      'Weitere Räume',
-      'WLAN',
-      'Defibrillatoren',
-      'Wickeltische'
+    final l = AppLocalizations.of(context)!;
+    final names = [
+      l.filterLabels,
+      l.filterSeminarRooms,
+      l.filterToilets,
+      l.filterAccessibleToilets,
+      l.filterStairs,
+      l.filterElevators,
+      l.filterOtherRooms,
+      l.filterWifi,
+      l.filterDefibrillators,
+      l.filterChangingTables,
     ];
     return names[option.index];
   }
@@ -172,11 +174,15 @@ class _BuildingScreenState extends State<BuildingScreen> {
 
     for (BuildingLevel lev in roomPage.buildingData.levels) {
       options.add(DropdownMenuItem(
-        child: Text(lev.name),
+        child: Text(
+            AppLocalizations.of(context)!.floorLabel(lev.name.split(' ').last),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis),
         value: lev.name,
       ));
     }
     return DropdownButton<String>(
+        isExpanded: true,
         underline: const SizedBox.shrink(),
         borderRadius: BorderRadius.circular(8),
         value: selectedLevel,
@@ -234,7 +240,7 @@ class _BuildingScreenState extends State<BuildingScreen> {
         children: [
           occupancyButtons(localizations, currentLocale),
           if (showOccupancyTable)
-            occupancyTableView(roomPlan, showOccupancyTable),
+            occupancyTableView(roomPlan, showOccupancyTable, context: context),
           if (errorMessageOccupancyTable != null)
             Padding(
                 padding: const EdgeInsets.all(8),
@@ -249,7 +255,7 @@ class _BuildingScreenState extends State<BuildingScreen> {
       );
 
   Widget _toolbar(localizations) => Container(
-        height: 52,
+        height: 36 + MediaQuery.textScalerOf(context).scale(16),
         decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             border: Border(
@@ -260,10 +266,8 @@ class _BuildingScreenState extends State<BuildingScreen> {
           Expanded(
               child: TextButton.icon(
             icon: const Icon(Icons.layers_outlined, size: 20),
-            label: Text(
-                '${localizations.buildingScreen_FilterTitle} (${selectedFilters.length})',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis),
+            label: Text(localizations.filterCount(selectedFilters.length),
+                maxLines: 1, overflow: TextOverflow.ellipsis),
             onPressed: () => showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
@@ -282,11 +286,7 @@ class _BuildingScreenState extends State<BuildingScreen> {
                             ]))))),
           )),
           const SizedBox(width: 8),
-          Text(Localizations.localeOf(context).languageCode == 'de'
-              ? 'Etage'
-              : 'Floor'),
-          const SizedBox(width: 8),
-          futurify(levelSelectionMenu, localizations),
+          Expanded(child: futurify(levelSelectionMenu, localizations)),
         ]),
       );
 
@@ -297,12 +297,12 @@ class _BuildingScreenState extends State<BuildingScreen> {
     return Scaffold(
       appBar: AppBar(
           title:
-              Text(widget.name, style: Theme.of(context).textTheme.titleLarge),
+              Text(widget.name, maxLines: 1, overflow: TextOverflow.ellipsis),
           actions: [
             if (widget.favoriteAction != null) widget.favoriteAction!,
             IconButton(
                 icon: const Icon(Icons.share),
-                tooltip: localizations.buildingScreen_openinWeb,
+                tooltip: localizations.roomShare,
                 onPressed: () async {
                   final data = await widget.room;
                   if (!mounted) return;
@@ -313,18 +313,25 @@ class _BuildingScreenState extends State<BuildingScreen> {
           top: false,
           child: LayoutBuilder(builder: (context, constraints) {
             final wide = constraints.maxWidth >= 840;
+            final headerHeight = DraggableBottomSheet.headerHeight(context);
             final details = _details(localizations, currentLocale);
             final map = Column(children: [
               _toolbar(localizations),
               Expanded(
                   child: wide
-                      ? asyncFloorView(widget.room)
+                      ? _floor()
                       : Stack(children: [
                           // The collapsed 64px header has its own space; the fit view is fully visible.
                           Positioned.fill(
-                              bottom: 64, child: asyncFloorView(widget.room)),
+                              bottom: headerHeight, child: _floor()),
                           DraggableBottomSheet(
-                              name: widget.name, child: details),
+                              name: widget.name,
+                              leading: CampusIdentity.wayfinding(context)
+                                  ? BuildingCodeBadge(
+                                      _originalQuery?.split('/').first ??
+                                          widget.name.split('/').first)
+                                  : null,
+                              child: details),
                         ])),
             ]);
             if (!wide) return map;
@@ -344,8 +351,19 @@ class _BuildingScreenState extends State<BuildingScreen> {
                       child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(widget.name,
-                                style: Theme.of(context).textTheme.titleMedium),
+                            Row(children: [
+                              if (CampusIdentity.wayfinding(context)) ...[
+                                BuildingCodeBadge(
+                                    _originalQuery?.split('/').first ??
+                                        widget.name.split('/').first),
+                                const SizedBox(width: 12),
+                              ],
+                              Expanded(
+                                  child: Text(widget.name,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium)),
+                            ]),
                             const SizedBox(height: 12),
                             details,
                           ]))),
@@ -353,4 +371,11 @@ class _BuildingScreenState extends State<BuildingScreen> {
           })),
     );
   }
+
+  Widget _floor() => Theme(
+      // Drawings keep every existing semantic color and transformation.
+      data: AppTheme.themeData(Theme.of(context).brightness == Brightness.dark
+          ? AppTheme.darkColorScheme
+          : AppTheme.lightColorScheme),
+      child: asyncFloorView(widget.room));
 }

@@ -4,6 +4,8 @@ import 'package:campus_navigator/api/saved_places.dart';
 import 'package:campus_navigator/api/search.dart';
 import 'package:campus_navigator/ui/search_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../campus_identity.dart';
 import 'building_screen.dart';
 import 'freeroom_search_screen.dart';
 import 'settings_screen.dart';
@@ -24,8 +26,7 @@ class _SearchScreenState extends State<SearchScreen> {
   final _textController = TextEditingController();
   String? _opening;
 
-  String _t(String de, String en) =>
-      Localizations.localeOf(context).languageCode == 'de' ? de : en;
+  AppLocalizations get _l => AppLocalizations.of(context)!;
 
   @override
   void initState() {
@@ -58,9 +59,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Future<void> _toggle(SavedPlace place) async {
     if (!await _places.toggle(place)) {
-      _message(_t(
-          'Favoriten konnten nicht gespeichert werden. Bitte erneut versuchen.',
-          'Could not save favorites. Please try again.'));
+      _message(_l.favoritesSaveFailed);
     }
   }
 
@@ -80,8 +79,7 @@ class _SearchScreenState extends State<SearchScreen> {
         return;
       }
       if (!saved) {
-        _message(_t('Der Verlauf konnte nicht gespeichert werden.',
-            'Could not save recent rooms.'));
+        _message(_l.historySaveFailed);
       }
       setState(() => _opening = null);
       await Navigator.push(
@@ -95,9 +93,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       builder: (context, _) => _favoriteButton(place)))));
     } catch (_) {
       if (!mounted) return;
-      _message(_t(
-          'Etagenplan nicht verfügbar. Bitte Verbindung prüfen und erneut versuchen.',
-          'Floor plan unavailable. Check your connection and try again.'));
+      _message(_l.floorUnavailable);
     } finally {
       if (mounted && _opening != null) setState(() => _opening = null);
     }
@@ -106,11 +102,9 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget _favoriteButton(SavedPlace place) {
     final selected = _places.contains(place);
     final enabled = _places.ready && !_places.saving;
-    final label = selected
-        ? _t('Favorit entfernen', 'Remove favorite')
-        : _t('Als Favorit speichern', 'Save favorite');
+    final label = selected ? _l.favoriteRemove : _l.favoriteAdd;
     return Semantics(
-        label: '$label: ${place.name}',
+        label: _l.favoriteActionLabel(label, place.name),
         button: true,
         toggled: selected,
         enabled: enabled,
@@ -130,22 +124,34 @@ class _SearchScreenState extends State<SearchScreen> {
       ListTile(
           key: ValueKey('place-$section-${place.key}'),
           contentPadding: EdgeInsets.zero,
-          leading: Icon(
-              place.kind == PlaceKind.room
-                  ? Icons.meeting_room_outlined
-                  : Icons.business_outlined,
-              color: Theme.of(context).colorScheme.onSurfaceVariant),
+          leading: CampusIdentity.wayfinding(context)
+              ? BuildingCodeBadge(place.buildingCode)
+              : Icon(
+                  place.kind == PlaceKind.room
+                      ? Icons.meeting_room_outlined
+                      : Icons.business_outlined,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
           title: Text(place.name, maxLines: 2, overflow: TextOverflow.ellipsis),
-          subtitle: Text(
-              place.kind == PlaceKind.room
-                  ? [
-                      if (detail != null && detail.isNotEmpty) detail,
-                      '${place.buildingCode.toUpperCase()} · ${_t('Etage', 'Floor')} ${place.floor}',
-                      if (place.subName != null) place.subName!,
-                    ].join(' · ')
-                  : '${place.buildingCode.toUpperCase()} · ${_t('Gebäude', 'Building')}',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis),
+          subtitle: Tooltip(
+              message: [detail, place.subName]
+                  .whereType<String>()
+                  .where((s) => s.isNotEmpty)
+                  .join(' · '),
+              child: Text(
+                  place.kind == PlaceKind.room
+                      ? [
+                          if (detail != null && detail.isNotEmpty) detail,
+                          _l.roomContext(
+                              place.buildingCode.toUpperCase(), place.floor!),
+                          if (place.subName != null &&
+                              place.subName != detail &&
+                              !place.subName!.toLowerCase().startsWith(
+                                  '${place.buildingCode.toLowerCase()}/'))
+                            place.subName!,
+                        ].join(' · ')
+                      : '${place.buildingCode.toUpperCase()} · ${_l.buildingKind}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis)),
           trailing: _opening == place.key
               ? const SizedBox(
                   width: 48,
@@ -160,11 +166,14 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Widget _heading(String text, {Widget? action}) => Padding(
       padding: const EdgeInsets.only(top: 12, bottom: 4),
-      child: Row(children: [
-        Expanded(
-            child: Text(text, style: Theme.of(context).textTheme.titleSmall)),
-        if (action != null) action,
-      ]));
+      child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Row(children: [
+            Expanded(
+                child:
+                    Text(text, style: Theme.of(context).textTheme.titleSmall)),
+            if (action != null) action,
+          ])));
 
   Widget _empty(String text, IconData icon) => Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -178,28 +187,27 @@ class _SearchScreenState extends State<SearchScreen> {
                     color: Theme.of(context).colorScheme.onSurfaceVariant))),
       ]));
 
-  List<Widget> _home() => [
+  List<Widget> _placeStatus() => [
         if (_places.loading) const LinearProgressIndicator(minHeight: 2),
         if (_places.loadFailed) ...[
-          _empty(
-              _t('Favoriten und Verlauf konnten nicht geladen werden.',
-                  'Could not load favorites and recent rooms.'),
-              Icons.error_outline),
+          _empty(_l.placesLoadFailed, Icons.error_outline),
           Align(
               alignment: Alignment.centerLeft,
               child: TextButton(
                   onPressed: _places.loading ? null : _places.load,
-                  child: Text(_t('Erneut versuchen', 'Try again')))),
+                  child: Text(_l.tryAgain))),
         ],
-        _heading(_t('Favoriten', 'Favorites')),
+      ];
+
+  List<Widget> _favorites() => [
+        _heading(_l.favoritesTitle),
         if (_places.favorites.isEmpty && !_places.loading)
-          _empty(
-              _t('Mit dem Stern Räume und Gebäude für den schnellen Zugriff speichern.',
-                  'Use the star to save rooms and buildings for quick access.'),
-              Icons.star_outline_rounded),
+          _empty(_l.favoritesEmpty, Icons.star_outline_rounded),
         ..._places.favorites.map((p) => _entry(p, section: 'favorite')),
-        const Divider(height: 24),
-        _heading(_t('Zuletzt aufgerufen', 'Recent rooms'),
+      ];
+
+  List<Widget> _recent() => [
+        _heading(_l.recentTitle,
             action: _places.recent.isEmpty
                 ? null
                 : TextButton(
@@ -207,19 +215,46 @@ class _SearchScreenState extends State<SearchScreen> {
                         ? null
                         : () async {
                             if (!await _places.clearHistory()) {
-                              _message(_t(
-                                  'Verlauf konnte nicht gelöscht werden.',
-                                  'Could not clear recent rooms.'));
+                              _message(_l.historyClearFailed);
                             }
                           },
-                    child: Text(_t('Leeren', 'Clear')))),
+                    child: Text(_l.clearHistoryAction))),
         if (_places.recent.isEmpty && !_places.loading)
-          _empty(
-              _t('Hier erscheinen die zuletzt geöffneten Räume.',
-                  'Rooms you open will appear here.'),
-              Icons.history),
+          _empty(_l.recentEmpty, Icons.history),
         ..._places.recent.map((p) => _entry(p, section: 'recent')),
       ];
+
+  List<Widget> _home() => [
+        ..._placeStatus(),
+        ..._favorites(),
+        const Divider(height: 24),
+        ..._recent()
+      ];
+
+  Widget _list(List<Widget> children, {Key? key}) => ListView(
+      key: key,
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      children: children);
+
+  Widget _content() => LayoutBuilder(builder: (context, bounds) {
+        if (_search.query.isNotEmpty) return _list(_results());
+        if (bounds.maxWidth < 720) return _list(_home());
+        return Column(children: [
+          ..._placeStatus(),
+          Expanded(
+              child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                Expanded(
+                    child: _list(_favorites(),
+                        key: const ValueKey('hub-favorites'))),
+                const VerticalDivider(width: 1),
+                Expanded(
+                    child: _list(_recent(), key: const ValueKey('hub-recent'))),
+              ])),
+        ]);
+      });
 
   List<Widget> _results() {
     final result = _search.result;
@@ -237,36 +272,29 @@ class _SearchScreenState extends State<SearchScreen> {
     return [
       if (_search.loading) ...[
         const LinearProgressIndicator(minHeight: 2),
-        _empty(_t('Suche läuft …', 'Searching …'), Icons.search),
+        _empty(_l.searchLoading, Icons.search),
       ],
       if (_search.failed) ...[
-        _empty(
-            _t('Suche nicht verfügbar. Bitte Verbindung prüfen.',
-                'Search unavailable. Check your connection.'),
-            Icons.wifi_off),
+        _empty(_l.searchFailed, Icons.wifi_off),
         Align(
             alignment: Alignment.centerLeft,
-            child: TextButton(
-                onPressed: _search.retry,
-                child: Text(_t('Erneut versuchen', 'Try again')))),
+            child:
+                TextButton(onPressed: _search.retry, child: Text(_l.tryAgain))),
       ],
       if (result != null) ...[
         if (result.assist.isNotEmpty)
           Text(result.assist, style: Theme.of(context).textTheme.bodySmall),
         if (rooms.isNotEmpty) ...[
-          _heading(_t('Räume', 'Rooms')),
+          _heading(_l.roomsTitle),
           ...rooms.map(
               (entry) => _entry(entry.place!, detail: entry.result.detail)),
         ],
         if (buildings.isNotEmpty) ...[
-          _heading(_t('Gebäude', 'Buildings')),
+          _heading(_l.buildingsTitle),
           ...buildings.map(_entry),
         ],
         if (rooms.isEmpty && buildings.isEmpty)
-          _empty(
-              _t('Keine Treffer. Gebäude und Raumnummer eingeben, z. B. BEY 318.',
-                  'No results. Enter a building and room number, e.g. BEY 318.'),
-              Icons.search_off),
+          _empty(_l.searchNoResults, Icons.search_off),
         if (result.moreRooms || result.moreBuildings)
           Align(
               alignment: Alignment.centerLeft,
@@ -282,37 +310,40 @@ class _SearchScreenState extends State<SearchScreen> {
                           ? Icons.refresh
                           : Icons.expand_more),
                   label: Text(_search.loading
-                      ? _t('Alle Treffer werden geladen …',
-                          'Loading all results …')
+                      ? _l.searchLoadingAll
                       : _search.fullSearchFailed
-                          ? _t(
-                              'Vollsuche erneut versuchen', 'Retry full search')
-                          : _t('Alle Treffer anzeigen', 'Show all results')))),
+                          ? _l.searchRetryAll
+                          : _l.searchLoadAll))),
       ],
     ];
   }
 
   @override
   Widget build(BuildContext context) => Scaffold(
-      appBar: AppBar(title: const Text('Campus Navigator'), actions: [
-        IconButton(
-            icon: const Icon(Icons.settings),
-            tooltip: _t('Einstellungen', 'Settings'),
-            onPressed: () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const SettingsScreen()))),
-        IconButton(
-            icon: const Badge(
-                child: Icon(Icons.meeting_room), label: Text('WIP')),
-            tooltip: _t('Freiraumsuche', 'Free room search'),
-            onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => const FreeroomSearchScreen()))),
-      ]),
+      appBar: AppBar(
+          title: const Text('Campus Navigator',
+              maxLines: 1, overflow: TextOverflow.ellipsis),
+          actions: [
+            IconButton(
+                icon: const Icon(Icons.settings),
+                tooltip: _l.settingsScreen_Title,
+                onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => SettingsScreen(places: _places)))),
+            IconButton(
+                icon:
+                    const Badge(smallSize: 6, child: Icon(Icons.meeting_room)),
+                tooltip: _l.freeRoomExperimental,
+                onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const FreeroomSearchScreen()))),
+          ]),
       body: SafeArea(
           child: Center(
               child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 720),
+                  constraints: const BoxConstraints(maxWidth: 1040),
                   child: Column(children: [
                     Padding(
                         padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -322,15 +353,13 @@ class _SearchScreenState extends State<SearchScreen> {
                             textInputAction: TextInputAction.search,
                             decoration: InputDecoration(
                                 prefixIcon: const Icon(Icons.search),
-                                labelText:
-                                    _t('Gebäude oder Raum', 'Building or room'),
-                                hintText: _t('z. B. BEY 318', 'e.g. BEY 318'),
+                                labelText: _l.searchHint,
+                                hintText: _l.searchExample,
                                 border: const OutlineInputBorder(),
                                 suffixIcon: _textController.text.isEmpty
                                     ? null
                                     : IconButton(
-                                        tooltip:
-                                            _t('Suche leeren', 'Clear search'),
+                                        tooltip: _l.clearSearch,
                                         icon: const Icon(Icons.close),
                                         onPressed: () {
                                           _textController.clear();
@@ -341,12 +370,6 @@ class _SearchScreenState extends State<SearchScreen> {
                                 _search.change(value, immediately: true))),
                     if (_opening != null)
                       const LinearProgressIndicator(minHeight: 2),
-                    Expanded(
-                        child: ListView(
-                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                            keyboardDismissBehavior:
-                                ScrollViewKeyboardDismissBehavior.onDrag,
-                            children:
-                                _search.query.isEmpty ? _home() : _results())),
+                    Expanded(child: _content()),
                   ])))));
 }

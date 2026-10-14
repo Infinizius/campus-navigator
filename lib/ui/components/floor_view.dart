@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:campus_navigator/api/building/building_page_data.dart';
 import 'painter.dart';
 
@@ -93,7 +94,7 @@ class _FloorViewState extends State<FloorView> {
 
   @override
   Widget build(BuildContext context) {
-    final german = Localizations.localeOf(context).languageCode == 'de';
+    final localizations = AppLocalizations.of(context);
     return LayoutBuilder(builder: (context, constraints) {
       _viewport = constraints.biggest;
       _pixelRatio = MediaQuery.devicePixelRatioOf(context);
@@ -119,7 +120,7 @@ class _FloorViewState extends State<FloorView> {
             right: 8,
             bottom: 8,
             child: IconButton.filledTonal(
-              tooltip: german ? 'Gesamte Etage' : 'Entire floor',
+              tooltip: localizations?.floorFit ?? 'Entire floor',
               onPressed: _reset,
               icon: const Icon(Icons.fit_screen),
             )),
@@ -133,9 +134,7 @@ class _FloorViewState extends State<FloorView> {
                             .data.backgroundImageData!.failedImages >
                         0
                     ? Tooltip(
-                        message: german
-                            ? 'Einige Plankacheln fehlen. Etage erneut öffnen.'
-                            : 'Some plan tiles are missing. Reopen this floor.',
+                        message: localizations?.floorImagesMissing ?? 'Some plan tiles are missing. Reopen this floor.',
                         child: Icon(Icons.cloud_off_outlined,
                             color: Theme.of(context).colorScheme.error))
                     : const SizedBox.shrink(),
@@ -154,7 +153,7 @@ Widget asyncFloorView(Future<BuildingPageData> result,
     FutureBuilder<BuildingPageData>(
       future: result,
       builder: (context, snapshot) {
-        if (snapshot.hasError) return Center(child: Text('${snapshot.error}'));
+        if (snapshot.hasError) return Center(child: Text(AppLocalizations.of(context)?.floorUnavailable ?? 'Floor plan unavailable.'));
         if (snapshot.connectionState == ConnectionState.done &&
             snapshot.hasData) {
           return FloorView(data: snapshot.data!);

@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class DraggableBottomSheet extends StatefulWidget {
   const DraggableBottomSheet(
-      {super.key, required this.name, required this.child});
+      {super.key, required this.name, required this.child, this.leading});
   final String name;
   final Widget child;
+  final Widget? leading;
+  static double headerHeight(BuildContext context) =>
+      48 + MediaQuery.textScalerOf(context).scale(16);
   @override
   State<DraggableBottomSheet> createState() => _DraggableBottomSheetState();
 }
@@ -29,13 +33,14 @@ class _DraggableBottomSheetState extends State<DraggableBottomSheet> {
   @override
   Widget build(BuildContext context) =>
       LayoutBuilder(builder: (context, constraints) {
-        _collapsed = (64 / constraints.maxHeight).clamp(0.08, 0.3);
+        final headerHeight = DraggableBottomSheet.headerHeight(context);
+        _collapsed = (headerHeight / constraints.maxHeight).clamp(0.08, 0.85);
         return DraggableScrollableSheet(
           initialChildSize: _collapsed,
           minChildSize: _collapsed,
           maxChildSize: 0.9,
           snap: true,
-          snapSizes: [_collapsed, 0.55, 0.9],
+          snapSizes: {_collapsed, if (_collapsed < 0.55) 0.55, 0.9}.toList(),
           controller: _controller,
           builder: (context, scrollController) => Material(
             color: Theme.of(context).colorScheme.surface,
@@ -47,26 +52,34 @@ class _DraggableBottomSheetState extends State<DraggableBottomSheet> {
             clipBehavior: Clip.antiAlias,
             child: CustomScrollView(controller: scrollController, slivers: [
               SliverToBoxAdapter(
-                  child: InkWell(
-                onTap: _toggle,
-                child: SizedBox(
-                    height: 64,
-                    child: Column(children: [
-                      const Grabber(),
-                      Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Row(children: [
-                            Expanded(
-                                child: Text(widget.name,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleSmall)),
-                            const Icon(Icons.unfold_more, size: 20)
-                          ])),
-                    ])),
-              )),
+                  child: Semantics(
+                      button: true,
+                      label: AppLocalizations.of(context)!.roomInformation,
+                      child: InkWell(
+                        onTap: _toggle,
+                        child: SizedBox(
+                            height: headerHeight,
+                            child: Column(children: [
+                              const Grabber(),
+                              Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16),
+                                  child: Row(children: [
+                                    if (widget.leading != null) ...[
+                                      widget.leading!,
+                                      const SizedBox(width: 12)
+                                    ],
+                                    Expanded(
+                                        child: Text(widget.name,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .titleSmall)),
+                                    const Icon(Icons.unfold_more, size: 20)
+                                  ])),
+                            ])),
+                      ))),
               SliverToBoxAdapter(
                   child: Padding(
                       padding: const EdgeInsets.fromLTRB(8, 0, 8, 16),

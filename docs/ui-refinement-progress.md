@@ -37,6 +37,43 @@ gemeinsame Integration muss den bereits identisch vorhandenen Code berücksichti
 Task 2: pending — Tokens, Hub, Suchlisten und Layout-Regressionsschutz.
 Task 3: pending — Karten-Chrome, Insets und responsive Navigation.
 Task 4: pending — Etagen-Chrome/Sheet/Adressinformationen.
-Task 5: in_progress — vollständiges ARB-Inventar und Integration planen;
-de/en zuerst, anschließend 12 weitere Kataloge mit getrennter Dateizuständigkeit.
+Task 5: in_progress — 190 Texte in 14 Sprachen angelegt; 12 neue Kataloge
+durch drei Agenten mit getrennter Dateizuständigkeit. JSON-/Schlüssel- und
+Platzhalter-Parität geprüft. Flutter verlangt zusätzlich einen technischen
+Basis-Katalog zh für zh_Hans; gleiche vereinfachte Übersetzung, keine 15. Sprache.
+Root-Sprach-/Theme-Tests vor Implementierung rot (MyApp ohne Settings-Parameter).
+
+Ruling: beide Campus-Identity-Varianten umschaltbar, Default academic (A) —
+neue tatsächliche Nutzerantwort im Settings-Chat 01a13b47-6a8f-7c51-92db-0fe87b4d3b57
+geprüft; frühere Arbeitsrichtung B wird entsprechend erweitert — Kosten: ein
+zusätzlicher UI-Modus; Settings-Persistenz und Selektor bleiben beim Settings-Agenten.
 Task 6: pending — Produkt-QA, APK und abschließender Review.
+
+Task 2: complete — native Hub mit A/B-Leading, unveränderte Raumtitel/IDs,
+redundante Serverpfade nur im Tooltip; 25 Favoriten bei 200-%-Text geprüft.
+Abgeschnittener WIP-Text rot reproduziert, kleine Statusmarkierung grün.
+Task 3: complete — Rail ab 1000 dp Gerätebreite, Hub-Spalten ab 720 dp Inhalt;
+IndexedStack bleibt bei Rotation/Tabwechsel erhalten; Bottom Navigation und
+Kartenwerkzeuge während Tastatur ausgeblendet; Kartenmodus persistent angebunden.
+Task 4: complete — lokalisierte Filter/Etage, skalierende Sheet-Höhe,
+seitliche Details erhalten; FloorView unter alter AppTheme. Palette-Test
+zunächst rot (Campusblau statt Zeichnungsgrün), danach grün.
+Task 5: complete — 193 Texte/14 Sprachen plus technischer zh-Alias,
+A/B- und Kartentheme-Integration getestet. Settings-Deltas b6edc03 und
+5fc1e44 unverändert als 1f51dcb und 3159195 übernommen.
+Ruling: native Windows-Ledger in docs statt Bash-SDD-Skript — Git-Bash fehlt,
+WSL ist kein garantierter Dart/SDK-Kontext — keine Tests/Briefs außerhalb dieses Worktrees.
+Ruling: Standardwerte im Plan aktualisieren (A default, B wählbar; Rail 1000,
+Hub 720) — konkrete lange Sprachlabels und klare Tablet-Kontexte — kompakte
+Querformattelefone verwenden weiterhin Bottom Navigation.
+Ruling: FloorView-Datei ausschließlich Tooltip-/Fehlertexte lokalisieren —
+14-Sprachen-Anforderung — keine Änderung an Renderer, Mathe, Gesten, Raster,
+Farbtransformation oder Painter; Zeichnungspalette bleibt separat unverändert.
+Ruling: vorhandene englische Settings-Aktionsnamen erhalten — neue Texte sind
+nicht notwendig für das UI-Ziel und der Settings-Owner testet sie — deutsche
+und andere Übersetzungen bleiben natürlich; Option-B-Testfix vom Owner.
+Task 6: in_progress — Vollsuite 132 bestanden / 26 externe Fixture-Skips,
+Analyze 36 Legacy-Infos ohne Warnung/Fehler; Produkt-APK gebaut. Native
+Produktprüfung läuft. Kommunikation an Settings-Chat von Auto-Review abgelehnt;
+explizite Nutzerfreigabe angefragt, keine Umgehung. Owner liefert unabhängig
+weitere Patches und hat den Emulator zur Nutzung freigegeben.

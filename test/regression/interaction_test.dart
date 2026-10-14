@@ -95,13 +95,13 @@ void main() {
       }
       await tester.tap(find.byType(DropdownButton<String>));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('01').last);
+      await tester.tap(find.text('Etage 01').last);
       await tester.pumpAndSettle();
       expect(paths, contains('/etplan/test/01'));
       expect(find.text('Raumbelegungsplan laden'), findsNothing);
       await tester.tap(find.byType(DropdownButton<String>));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('00').last);
+      await tester.tap(find.text('Etage 00').last);
       await tester.pumpAndSettle();
       expect(paths, contains('/etplan/test/00/raum/test.318'));
       expect(tester.takeException(), isNull);

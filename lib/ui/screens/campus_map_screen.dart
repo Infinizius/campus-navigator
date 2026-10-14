@@ -6,10 +6,13 @@ import 'package:campus_navigator/api/campus/campus_location.dart';
 import 'package:campus_navigator/api/campus/campus_tiles.dart';
 import 'package:campus_navigator/api/place_navigation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../styling.dart';
+import '../../settings/app_settings_controller.dart';
+import '../../settings/app_settings_scope.dart';
+import '../campus_identity.dart';
 import 'building_screen.dart';
 
 const campusCenter = LatLng(51.0282, 13.7267);
@@ -62,8 +65,7 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
   bool? _polygonDark;
   int? _polygonZoom;
 
-  String _t(String de, String en) =>
-      Localizations.localeOf(context).languageCode == 'de' ? de : en;
+  AppLocalizations get _l => AppLocalizations.of(context)!;
 
   @override
   void initState() {
@@ -143,24 +145,16 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
       if (!mounted || !widget.active) return;
       setState(() => _position = point);
       _map.move(point, 17);
-      _message(_t('Letzte ermittelte Position · keine laufende Ortung.',
-          'Last measured position · continuous tracking is off.'));
+      _message(_l.mapLocationMeasured);
     } on CampusLocationException catch (error) {
       if (!mounted) return;
       _message(switch (error.reason) {
-        CampusLocationFailure.denied => _t(
-            'Standortfreigabe verweigert. Die Karte bleibt vollständig bedienbar. Freigabe bei Bedarf in den Android-App-Einstellungen ändern.',
-            'Location permission denied. You can still use the map. Change permission in Android app settings if needed.'),
-        CampusLocationFailure.disabled => _t(
-            'Standortdienste sind ausgeschaltet.',
-            'Location services are off.'),
-        CampusLocationFailure.unavailable => _t(
-            'Position derzeit nicht verfügbar. Erneut versuchen.',
-            'Position currently unavailable. Try again.'),
+        CampusLocationFailure.denied => _l.mapLocationDenied,
+        CampusLocationFailure.disabled => _l.mapLocationOff,
+        CampusLocationFailure.unavailable => _l.mapLocationUnavailable,
       });
     } catch (_) {
-      _message(_t('Position derzeit nicht verfügbar. Erneut versuchen.',
-          'Position currently unavailable. Try again.'));
+      _message(_l.mapLocationUnavailable);
     } finally {
       if (mounted) setState(() => _locating = false);
     }
@@ -190,15 +184,11 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
         if (e.message == 'No floor plan available') {
           setState(() => _noPlans.add(building.code));
         } else {
-          _message(_t(
-              'Etagenplan nicht verfügbar. Verbindung prüfen und erneut versuchen.',
-              'Floor plan unavailable. Check your connection and try again.'));
+          _message(_l.floorUnavailable);
         }
       }
     } catch (_) {
-      _message(_t(
-          'Etagenplan nicht verfügbar. Verbindung prüfen und erneut versuchen.',
-          'Floor plan unavailable. Check your connection and try again.'));
+      _message(_l.floorUnavailable);
     } finally {
       if (mounted) {
         _searchFocus.canRequestFocus = true;
@@ -211,8 +201,7 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
     if (_routing) return;
     final uri = building.routeUri;
     if (uri == null) {
-      _message(_t('Keine gültigen Zielkoordinaten verfügbar.',
-          'No valid destination coordinates available.'));
+      _message(_l.mapRouteInvalid);
       return;
     }
     setState(() => _routing = true);
@@ -220,13 +209,10 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
       final opened = await (widget.launchRoute?.call(uri) ??
           launchUrl(uri, mode: LaunchMode.externalApplication));
       if (!opened) {
-        _message(_t(
-            'Navigation konnte nicht geöffnet werden. Kein Browser oder keine Karten-App verfügbar.',
-            'Could not open navigation. No browser or maps app available.'));
+        _message(_l.mapRouteAppMissing);
       }
     } catch (_) {
-      _message(_t('Navigation konnte nicht geöffnet werden.',
-          'Could not open navigation.'));
+      _message(_l.mapRouteFailed);
     } finally {
       if (mounted) setState(() => _routing = false);
     }
@@ -256,11 +242,11 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
               points: ring,
               hitValue: building,
               color: building == _selected
-                  ? (dark ? const Color(0xff499e96) : const Color(0xff82c5bf))
-                  : (dark ? const Color(0xff375a61) : const Color(0xffc3dedb)),
+                  ? (dark ? const Color(0xff486c8c) : const Color(0xff9dbbd3))
+                  : (dark ? const Color(0xff304657) : const Color(0xffd4e0e9)),
               borderColor: building == _selected
-                  ? (dark ? const Color(0xffd4fff4) : const Color(0xff004d48))
-                  : (dark ? const Color(0xff8cb7ba) : const Color(0xff55837f)),
+                  ? (dark ? const Color(0xffc5dff4) : const Color(0xff173657))
+                  : (dark ? const Color(0xff8da8bc) : const Color(0xff527d9b)),
               borderStrokeWidth:
                   building == _selected ? 3 : (_zoomBucket >= 16 ? 1.3 : 0.8),
               label: _zoomBucket >= 16 || building == _selected
@@ -269,7 +255,7 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
               labelStyle: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: dark ? Colors.white : const Color(0xff003e3a)))
+                  color: dark ? Colors.white : const Color(0xff173657)))
     ];
     return _polygons;
   }
@@ -287,8 +273,7 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
                     child: Text(text,
                         style: Theme.of(context).textTheme.bodySmall)),
                 TextButton(
-                    onPressed: busy ? null : retry,
-                    child: Text(_t('Erneut versuchen', 'Try again')))
+                    onPressed: busy ? null : retry, child: Text(_l.tryAgain))
               ])));
 
   Widget _details(BuildContext context, CampusFeature b, bool wide) => Material(
@@ -307,16 +292,19 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Row(children: [
-                      Text(b.code,
-                          style: Theme.of(context)
-                              .textTheme
-                              .labelLarge
-                              ?.copyWith(
-                                  color:
-                                      Theme.of(context).colorScheme.primary)),
+                      if (CampusIdentity.wayfinding(context))
+                        BuildingCodeBadge(b.code)
+                      else
+                        Text(b.code,
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelLarge
+                                ?.copyWith(
+                                    color:
+                                        Theme.of(context).colorScheme.primary)),
                       const Spacer(),
                       IconButton(
-                          tooltip: _t('Auswahl schließen', 'Close selection'),
+                          tooltip: _l.mapCloseSelection,
                           onPressed: () => setState(() => _selected = null),
                           icon: const Icon(Icons.close))
                     ]),
@@ -342,8 +330,8 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
                                       CircularProgressIndicator(strokeWidth: 2))
                               : const Icon(Icons.layers_outlined, size: 18),
                           label: Text(_noPlans.contains(b.code)
-                              ? _t('Kein Etagenplan', 'No floor plan')
-                              : _t('Etagenpläne', 'Floor plans'))),
+                              ? _l.mapNoFloorPlan
+                              : _l.mapFloorPlans)),
                       OutlinedButton.icon(
                           key: const ValueKey('campus-route'),
                           onPressed: b.routeUri == null || _routing
@@ -352,19 +340,16 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
                           style: OutlinedButton.styleFrom(
                               minimumSize: const Size(0, 48)),
                           icon: const Icon(Icons.navigation_outlined, size: 18),
-                          label: Text(_t('Navigieren', 'Navigate'))),
+                          label: Text(_l.mapNavigate)),
                     ]),
                     const SizedBox(height: 4),
-                    Text(
-                        _t('Routenziel: Gebäudepunkt · Eingang nicht bestätigt.',
-                            'Route destination: building point · entrance unverified.'),
+                    Text(_l.mapRouteNote,
                         style: Theme.of(context).textTheme.bodySmall),
-                    if (b.outlines.isEmpty)
-                      Text(_t('Keine gültige Gebäudegeometrie verfügbar.',
-                          'No valid building geometry available.')),
+                    if (b.outlines.isEmpty) Text(_l.mapGeometryMissing),
                   ]))));
 
-  Widget _mapView(BuildContext context, bool dark) => Stack(children: [
+  Widget _mapView(BuildContext context, bool dark, {bool tools = true}) =>
+      Stack(children: [
         Positioned.fill(
             child: RepaintBoundary(
                 child: FlutterMap(
@@ -448,8 +433,7 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
                       width: 28,
                       height: 28,
                       child: Tooltip(
-                          message: _t('Letzte ermittelte Position',
-                              'Last measured position'),
+                          message: _l.mapLastPosition,
                           child: Container(
                               decoration: BoxDecoration(
                                   color: const Color(0xff1769d2),
@@ -460,32 +444,33 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
                                   size: 10, color: Colors.white))))
                 ]),
             ]))),
-        Positioned(
-            right: 12,
-            top: 12,
-            child: Column(children: [
-              _mapButton(context, _t('Zum Campus', 'Show campus'),
-                  Icons.school_outlined, () => _map.move(campusCenter, 16)),
-              const SizedBox(height: 8),
-              _mapButton(
-                  context,
-                  _t('Eigene Position anzeigen', 'Show my location'),
-                  _locating ? Icons.hourglass_top : Icons.my_location,
-                  _locating ? null : _locate),
-              const SizedBox(height: 8),
-              _mapButton(
-                  context,
-                  _t('Vergrößern', 'Zoom in'),
-                  Icons.add,
-                  () => _map.move(
-                      _map.camera.center, (_map.camera.zoom + 1).clamp(5, 20))),
-              _mapButton(
-                  context,
-                  _t('Verkleinern', 'Zoom out'),
-                  Icons.remove,
-                  () => _map.move(
-                      _map.camera.center, (_map.camera.zoom - 1).clamp(5, 20))),
-            ])),
+        if (tools)
+          Positioned(
+              right: 12,
+              top: 12,
+              child: Column(children: [
+                _mapButton(context, _l.mapShowCampus, Icons.school_outlined,
+                    () => _map.move(campusCenter, 16)),
+                const SizedBox(height: 8),
+                _mapButton(
+                    context,
+                    _l.mapLocate,
+                    _locating ? Icons.hourglass_top : Icons.my_location,
+                    _locating ? null : _locate),
+                const SizedBox(height: 8),
+                _mapButton(
+                    context,
+                    _l.mapZoomIn,
+                    Icons.add,
+                    () => _map.move(_map.camera.center,
+                        (_map.camera.zoom + 1).clamp(5, 20))),
+                _mapButton(
+                    context,
+                    _l.mapZoomOut,
+                    Icons.remove,
+                    () => _map.move(_map.camera.center,
+                        (_map.camera.zoom - 1).clamp(5, 20))),
+              ])),
         Positioned(
             left: 0,
             right: 0,
@@ -510,20 +495,23 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
                           onTap: () => launchUrl(
                               Uri.parse('https://navigator.tu-dresden.de/'),
                               mode: LaunchMode.externalApplication),
-                          child: const Padding(
-                              padding: EdgeInsets.symmetric(
+                          child: Padding(
+                              padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 8),
-                              child: Text('Gebäude: TU Dresden',
-                                  style: TextStyle(fontSize: 11)))),
+                              child: Text(_l.mapBuildingsSource,
+                                  style: const TextStyle(fontSize: 11)))),
                     ]))),
       ]);
 
   Widget _mapButton(BuildContext context, String label, IconData icon,
           VoidCallback? action) =>
       Material(
-          elevation: 1,
+          elevation: 0,
           color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(12),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+              side: BorderSide(
+                  color: Theme.of(context).colorScheme.outlineVariant)),
           child:
               IconButton(tooltip: label, onPressed: action, icon: Icon(icon)));
 
@@ -539,14 +527,25 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
             .take(12)
             .toList();
     return Scaffold(
-        appBar: AppBar(title: Text(_t('Campuskarte', 'Campus map')), actions: [
+        appBar: AppBar(title: Text(_l.settingsMapThemeTitle), actions: [
           IconButton(
-              tooltip: _t('Kartenstil wechseln', 'Switch map style'),
-              onPressed: () => setState(() => _darkOverride = !dark),
+              tooltip: _l.mapStyle,
+              onPressed: () {
+                final settings = AppSettingsScope.maybeOf(context);
+                if (settings == null) {
+                  setState(() => _darkOverride = !dark);
+                  return;
+                }
+                settings
+                    .setCampusMapThemeMode(dark
+                        ? CampusMapThemeMode.light
+                        : CampusMapThemeMode.dark)
+                    .catchError((_) => _message(_l.settingsSaveFailure));
+              },
               icon: Icon(
                   dark ? Icons.light_mode_outlined : Icons.dark_mode_outlined)),
           IconButton(
-              tooltip: _t('Gebäudedaten aktualisieren', 'Refresh buildings'),
+              tooltip: _l.mapRefresh,
               onPressed:
                   _catalog.busy ? null : () => _catalog.load(refresh: true),
               icon: const Icon(Icons.refresh)),
@@ -564,13 +563,13 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
                       decoration: InputDecoration(
                           isDense: true,
                           prefixIcon: const Icon(Icons.search),
-                          labelText: _t('Gebäude finden', 'Find a building'),
-                          hintText: 'APB, Barkhausen …',
+                          labelText: _l.mapSearchHint,
+                          hintText: _l.mapSearchExample,
                           border: const OutlineInputBorder(),
                           suffixIcon: _query.isEmpty
                               ? null
                               : IconButton(
-                                  tooltip: _t('Suche leeren', 'Clear search'),
+                                  tooltip: _l.clearSearch,
                                   icon: const Icon(Icons.close),
                                   onPressed: () {
                                     _search.clear();
@@ -590,8 +589,7 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
                         child: matches.isEmpty
                             ? Padding(
                                 padding: const EdgeInsets.all(12),
-                                child: Text(_t('Kein Gebäude gefunden.',
-                                    'No building found.')))
+                                child: Text(_l.mapNoResults))
                             : ListView.builder(
                                 shrinkWrap: true,
                                 itemCount: matches.length,
@@ -599,9 +597,16 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
                                   final b = matches[i];
                                   return ListTile(
                                       key: ValueKey('campus-result-${b.code}'),
-                                      dense: true,
-                                      leading: Text(b.code),
-                                      title: Text(b.name),
+                                      leading:
+                                          CampusIdentity.wayfinding(context)
+                                              ? BuildingCodeBadge(b.code)
+                                              : Text(b.code,
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .labelLarge),
+                                      title: Text(b.name,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis),
                                       onTap: () => _select(b, focus: true));
                                 }))),
               if (_catalog.busy) const LinearProgressIndicator(minHeight: 2),
@@ -611,26 +616,16 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
                 _banner(
                     context,
                     _catalog.buildings.isEmpty
-                        ? _t(
-                            'TU-Gebäude nicht erreichbar. Die Basiskarte bleibt nutzbar.',
-                            'TU buildings unavailable. The basemap is still usable.')
+                        ? _l.mapBuildingsUnavailable
                         : _catalog.stale
-                            ? _t(
-                                'Gespeicherte Gebäudedaten · Aktualisierung ausstehend.',
-                                'Saved building data · update pending.')
-                            : _t(
-                                'Gebäudedaten geladen, lokal nicht gespeichert.',
-                                'Buildings loaded but could not be saved locally.'),
+                            ? _l.mapBuildingsStale
+                            : _l.mapBuildingsNotSaved,
                     () => _catalog.load(refresh: true),
                     busy: _catalog.busy),
               ValueListenableBuilder<bool>(
                   valueListenable: _tileFailed,
                   builder: (context, failed, _) => failed
-                      ? _banner(
-                          context,
-                          _t('Kartenkacheln teilweise nicht verfügbar. Verbindung prüfen.',
-                              'Some map tiles unavailable. Check your connection.'),
-                          _retryTiles)
+                      ? _banner(context, _l.mapTilesUnavailable, _retryTiles)
                       : const SizedBox()),
               Expanded(child: LayoutBuilder(builder: (context, bounds) {
                 _focusAfterLayout(keyboardOpen);
@@ -644,13 +639,16 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
                   return Row(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Expanded(child: _mapView(context, dark)),
+                        Expanded(
+                            child:
+                                _mapView(context, dark, tools: !keyboardOpen)),
                         if (details != null)
                           SizedBox(width: 320, child: details)
                       ]);
                 }
                 return Column(children: [
-                  Expanded(child: _mapView(context, dark)),
+                  Expanded(
+                      child: _mapView(context, dark, tools: !keyboardOpen)),
                   if (details != null)
                     ConstrainedBox(
                         constraints:
@@ -663,11 +661,18 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final dark =
-        _darkOverride ?? Theme.of(context).brightness == Brightness.dark;
+    final settings = AppSettingsScope.maybeOf(context);
+    final dark = settings == null
+        ? (_darkOverride ?? Theme.of(context).brightness == Brightness.dark)
+        : switch (settings.campusMapThemeMode) {
+            CampusMapThemeMode.automatic =>
+              Theme.of(context).brightness == Brightness.dark,
+            CampusMapThemeMode.light => false,
+            CampusMapThemeMode.dark => true,
+          };
     return Theme(
-        data: AppTheme.themeData(
-            dark ? AppTheme.darkColorScheme : AppTheme.lightColorScheme),
+        data:
+            CampusIdentity.themeData(dark ? Brightness.dark : Brightness.light),
         child: Builder(builder: (context) => _content(context, dark)));
   }
 }
