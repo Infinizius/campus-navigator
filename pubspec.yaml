@@ -42,6 +42,10 @@ dependencies:
   maps_toolkit: ^3.0.0
   package_info_plus: 6.0.0
   week_number: ^1.1.1
+  file_selector: 1.0.3
+  icalendar_parser: 2.1.0
+  teno_rrule: 0.0.8
+  timezone: 0.10.1
   flutter_localizations:
     sdk: flutter
   intl: any
