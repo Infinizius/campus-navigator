@@ -3,6 +3,7 @@ import 'package:campus_navigator/api/place_navigation.dart';
 import 'package:campus_navigator/api/saved_places.dart';
 import 'package:campus_navigator/api/timetable/timetable_store.dart';
 import 'package:campus_navigator/ui/search_result_presentation.dart';
+import 'package:campus_navigator/api/mensa/mensa_repository.dart';
 import 'package:campus_navigator/ui/search_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -10,6 +11,7 @@ import '../campus_identity.dart';
 import '../components/next_event_preview.dart';
 import 'building_screen.dart';
 import 'freeroom_search_screen.dart';
+import 'mensa_screen.dart';
 import 'settings_screen.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -18,6 +20,7 @@ class SearchScreen extends StatefulWidget {
   final Future<BuildingPageData> Function(SavedPlace)? loadPlace;
   final TimetableStore? timetable;
   final VoidCallback? onTapTimetable;
+  final MensaRepository? mensaRepository;
   const SearchScreen({
     super.key,
     this.places,
@@ -25,6 +28,7 @@ class SearchScreen extends StatefulWidget {
     this.loadPlace,
     this.timetable,
     this.onTapTimetable,
+    this.mensaRepository,
   });
 
   @override
@@ -242,12 +246,44 @@ class _SearchScreenState extends State<SearchScreen> {
       ];
 
   List<Widget> _home() => [
+        _mensaEntry(),
         ..._placeStatus(),
         if (widget.timetable != null) _nextEventPreview(widget.timetable!),
         ..._favorites(),
         const Divider(height: 24),
         ..._recent()
       ];
+
+  Widget _mensaEntry() => Card(
+        key: const ValueKey('mensa-today-entry'),
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (_) =>
+                      MensaScreen(repository: widget.mensaRepository))),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(children: [
+              const Icon(Icons.restaurant_outlined),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(_l.mensaToday,
+                          style: Theme.of(context).textTheme.titleMedium),
+                      Text(_l.mensaTodaySubtitle,
+                          style: Theme.of(context).textTheme.bodySmall),
+                    ]),
+              ),
+              const Icon(Icons.chevron_right),
+            ]),
+          ),
+        ),
+      );
 
   Widget _nextEventPreview(TimetableStore store) => NextEventPreview(
         store: store,
@@ -264,6 +300,7 @@ class _SearchScreenState extends State<SearchScreen> {
         if (_search.query.isNotEmpty) return _resultsList();
         if (bounds.maxWidth < 720) return _list(_home());
         return Column(children: [
+          _mensaEntry(),
           ..._placeStatus(),
           if (widget.timetable != null) _nextEventPreview(widget.timetable!),
           Expanded(
@@ -385,8 +422,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     MaterialPageRoute(
                         builder: (_) => SettingsScreen(places: _places)))),
             CampusActionButton(
-                icon:
-                    const Badge(smallSize: 6, child: Icon(Icons.meeting_room)),
+                icon: const Icon(Icons.meeting_room),
                 label: _l.freeRoomExperimental,
                 onPressed: () => Navigator.push(
                     context,

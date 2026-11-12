@@ -15,6 +15,7 @@ import '../../settings/app_settings_controller.dart';
 import '../../settings/app_settings_scope.dart';
 import '../campus_identity.dart';
 import 'building_screen.dart';
+import '../components/mobibike_layer.dart';
 
 const campusCenter = LatLng(51.0282, 13.7267);
 const campusTileUrl = String.fromEnvironment('CAMPUS_TILE_URL',
@@ -441,6 +442,7 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
                           polygonCulling: true,
                           simplificationTolerance: 0,
                           drawLabelsLast: true),
+                      MobibikeLayer(active: widget.active && !_opening),
                       if (_position != null)
                         MarkerLayer(markers: [
                           Marker(

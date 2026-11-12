@@ -7,6 +7,7 @@ import 'package:campus_navigator/api/campus/campus_building.dart';
 import 'package:campus_navigator/api/campus/campus_location.dart';
 import 'package:campus_navigator/ui/screens/campus_map_screen.dart';
 import 'package:campus_navigator/ui/screens/building_screen.dart';
+import 'package:campus_navigator/ui/components/mobibike_layer.dart';
 import 'package:campus_navigator/ui/screens/home_screen.dart';
 import 'package:campus_navigator/ui/search_controller.dart';
 import 'package:flutter/material.dart';
@@ -288,8 +289,17 @@ void main() {
     await tester.pumpAndSettle();
     expect(opened, 'apb');
     expect(find.byType(BuildingScreen), findsOneWidget);
+    expect(
+        tester
+            .widget<MobibikeLayer>(
+                find.byType(MobibikeLayer, skipOffstage: false))
+            .active,
+        isFalse,
+        reason: 'A covered map must pause bicycle feed updates.');
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
+    expect(tester.widget<MobibikeLayer>(find.byType(MobibikeLayer)).active,
+        isTrue);
     expect(find.text('Andreas-Pfitzmann-Bau'), findsOneWidget);
     expect(
         tester

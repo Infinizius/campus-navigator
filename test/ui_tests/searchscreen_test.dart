@@ -2,12 +2,26 @@ import 'package:campus_navigator/main.dart';
 import 'package:campus_navigator/ui/screens/freeroom_search_screen.dart';
 import 'package:campus_navigator/ui/screens/search_screen.dart';
 import 'package:campus_navigator/ui/screens/settings_screen.dart';
+import 'package:campus_navigator/ui/screens/mensa_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 void main() {
   setUp(() => FlutterSecureStorage.setMockInitialValues({}));
+  testWidgets('Mensa heute opens the menu detail screen',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(const MyApp());
+    await tester.pump();
+
+    expect(find.byKey(const ValueKey('mensa-today-entry')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('mensa-today-entry')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
+
+    expect(find.byType(MensaScreen), findsOneWidget);
+  });
+
   testWidgets('SearchscreenNavigation', (WidgetTester tester) async {
 // Build our app and trigger a frame.
     await tester.pumpWidget(const MyApp());

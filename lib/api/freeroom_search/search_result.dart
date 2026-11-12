@@ -17,6 +17,29 @@ class FreeroomSearchResult {
     required this.roominfo,
   });
 
+  List<String> freeRoomsFor(int day, int period, {bool htw = false}) {
+    if (day < 0 || day > 6 || period < 0 || period > 8) {
+      throw RangeError('Invalid day or period');
+    }
+    final allRooms = htw ? htwRooms : rooms;
+    final occupied = htw ? htwTaken : taken;
+    if (allRooms.isEmpty) return [];
+    final index = day * 9 + period;
+    if (index >= occupied.length) {
+      throw const FormatException('Incomplete occupancy data');
+    }
+    final unavailable = occupied[index].toSet();
+    // The live TU endpoint uses -1 as a sentinel for an unmapped booking.
+    // Other out-of-range indices make the slot unreliable.
+    if (unavailable.any((i) => i < -1 || i >= allRooms.length)) {
+      throw const FormatException('Invalid occupancy index');
+    }
+    return [
+      for (var i = 0; i < allRooms.length; i++)
+        if (!unavailable.contains(i)) allRooms[i]
+    ];
+  }
+
   /// Returns a row list representation of the free rooms
   /// Each row is a day from monday to friday
   /// Each column is a DS
@@ -64,15 +87,15 @@ class FreeroomSearchResult {
 
   factory FreeroomSearchResult.fromJson(Map<String, dynamic> json) =>
       FreeroomSearchResult(
-        rooms: List<String>.from(json["rooms"].map((x) => x)),
-        htwRoominfo: Map.from(json["htw_roominfo"]).map((k, v) =>
+        rooms: List<String>.from(json["rooms"] ?? []),
+        htwRoominfo: Map.from(json["htw_roominfo"] ?? {}).map((k, v) =>
             MapEntry<String, HtwRoominfo>(k, HtwRoominfo.fromJson(v))),
         htwTaken: List<List<int>>.from(
-            json["htw_taken"].map((x) => List<int>.from(x.map((x) => x)))),
-        htwRooms: List<String>.from(json["htw_rooms"].map((x) => x)),
+            (json["htw_taken"] ?? []).map((x) => List<int>.from(x))),
+        htwRooms: List<String>.from(json["htw_rooms"] ?? []),
         taken: List<List<int>>.from(
-            json["taken"].map((x) => List<int>.from(x.map((x) => x)))),
-        roominfo: Map.from(json["roominfo"])
+            (json["taken"] ?? []).map((x) => List<int>.from(x))),
+        roominfo: Map.from(json["roominfo"] ?? {})
             .map((k, v) => MapEntry<String, Roominfo>(k, Roominfo.fromJson(v))),
       );
 

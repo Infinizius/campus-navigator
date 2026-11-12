@@ -1,0 +1,24 @@
+[
+  {
+    "id": 341962,
+    "name": "Paella mit Wildlachs und Hähnchenfleisch",
+    "notes": ["Fisch (D)", "685 g CO₂-Äquivalente"],
+    "prices": {"Studierende": 4.32, "Bedienstete": 7.86},
+    "soldout": false,
+    "category": "Ausgabe links"
+  },
+  {
+    "id": 341963,
+    "name": "Falafelbrätling mit Pommes frites",
+    "notes": ["Menü ist vegan", "enthält Knoblauch"],
+    "prices": {"Studierende": 2.35},
+    "soldout": true,
+    "category": "Ausgabe Mitte"
+  },
+  {
+    "id": 341964,
+    "name": "Halloumi-Zucchiniburger",
+    "notes": ["Menü ist vegetarisch"],
+    "category": "Ausgabe rechts"
+  }
+]

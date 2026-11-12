@@ -1,0 +1,17 @@
+[
+  {
+    "id": 9,
+    "name": "Mensa Siedepunkt",
+    "city": "Dresden",
+    "address": "Zellescher Weg 17, 01069 Dresden",
+    "coordinates": [51.02946063983054, 13.738727867603302],
+    "menu": "https://www.studentenwerk-dresden.de/mensen/speiseplan/mensa-siedepunkt.html"
+  },
+  {
+    "id": 10,
+    "name": "Mensa TellerRandt",
+    "city": "Tharandt",
+    "address": "Pienner Straße 15, 01737 Tharandt",
+    "coordinates": [50.98060093483648, 13.581464588642122]
+  }
+]

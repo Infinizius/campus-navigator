@@ -8,6 +8,10 @@ import 'package:campus_navigator/api/networking.dart';
 
 import '../storage.dart';
 
+class FreeRoomLoginRequired implements Exception {
+  const FreeRoomLoginRequired();
+}
+
 extension FreeroomSearchResult_APIExtension on BaseAPIServices {
   Future<FreeroomSearchResult> searchFreeRooms(
       {required int startWeek,
@@ -32,13 +36,29 @@ extension FreeroomSearchResult_APIExtension on BaseAPIServices {
       "mincapacity": minCapacity.toString(),
       "maxcapacity": maxCapacity.toString(),
       "hochschule": type,
-    });
+    }).timeout(requestTimeout);
 
+    if (response.statusCode == 401 ||
+        response.statusCode == 403 ||
+        response.statusCode == 302 ||
+        (response.body.trimLeft().startsWith('<') &&
+            response.body.toLowerCase().contains('login'))) {
+      throw const FreeRoomLoginRequired();
+    }
     if (response.statusCode != 200) {
-      throw Exception("bruh");
+      throw Exception('Free room search returned HTTP ${response.statusCode}');
     }
 
-    return FreeroomSearchResult.fromJson(jsonDecode(response.body));
+    final decoded = jsonDecode(response.body);
+    if (decoded is! Map<String, dynamic> ||
+        (universities.contains(UserUniversity.TUD) &&
+            (!decoded.containsKey('rooms') || !decoded.containsKey('taken'))) ||
+        (universities.contains(UserUniversity.HTW) &&
+            (!decoded.containsKey('htw_rooms') ||
+                !decoded.containsKey('htw_taken')))) {
+      throw const FormatException('Missing free-room data');
+    }
+    return FreeroomSearchResult.fromJson(decoded);
   }
 
   Future<RoomLinks> listBuildingRoomLinks(String building) async {
